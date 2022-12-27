@@ -25,6 +25,13 @@ type ConsulConf struct {
 	Address string
 	Scheme  string
 	Token   string
+	TLS     struct {
+		CertFile           string
+		KeyFile            string
+		CAFile             string
+		CAPath             string
+		InsecureSkipVerify bool
+	}
 }
 
 // Nameserver

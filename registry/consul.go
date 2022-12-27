@@ -27,6 +27,13 @@ func NewConsulRegistry(
 	config.Address = conf.Address
 	config.Scheme = conf.Scheme
 	config.Token = conf.Token
+	if conf.Scheme == "https" {
+		config.TLSConfig.KeyFile = conf.TLS.KeyFile
+		config.TLSConfig.CertFile = conf.TLS.CertFile
+		config.TLSConfig.CAFile = conf.TLS.CAFile
+		config.TLSConfig.CAPath = conf.TLS.CAPath
+		config.TLSConfig.InsecureSkipVerify = conf.TLS.InsecureSkipVerify
+	}
 
 	client, err := api.NewClient(config)
 
