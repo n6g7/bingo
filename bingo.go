@@ -95,6 +95,7 @@ func bingo(ns nameserver.Nameserver, reg registry.Registry, conf *config.Config)
 			records, err := ns.ListRecords()
 			if err != nil {
 				log.Printf("[ERROR] Error loading records from nameserver: %s", err)
+				continue
 			}
 			newNSDomains := reconcile.NewDomainSet()
 			for _, record := range records {
@@ -107,6 +108,7 @@ func bingo(ns nameserver.Nameserver, reg registry.Registry, conf *config.Config)
 			services, err := reg.ListFabioServices()
 			if err != nil {
 				log.Printf("[ERROR] Error loading services from registry: %s", err)
+				continue
 			}
 			newRegDomains := reconcile.NewDomainSet()
 			for _, service := range services {
