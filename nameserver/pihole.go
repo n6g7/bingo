@@ -1,9 +1,12 @@
 package nameserver
 
 import (
+	"bytes"
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"io"
+	"log"
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
@@ -60,6 +63,7 @@ func (ph *PiholeNS) login() error {
 	if resp.StatusCode != 200 {
 		return fmt.Errorf("Pi-hole login failed")
 	}
+	log.Println("[DEBUG] Pi-hole login successful")
 	return nil
 }
 
@@ -92,12 +96,22 @@ func (ph *PiholeNS) request(uri string, qs url.Values, output any) error {
 	}
 
 	if resp.StatusCode != 200 {
-		return fmt.Errorf("Error while querying %s: %d", uri, resp.StatusCode)
+		return fmt.Errorf("Unexpected status code while querying %s: %d", uri, resp.StatusCode)
 	}
 
-	decoder := json.NewDecoder(resp.Body)
+	// Attempt parsing body
+	rawBody := &bytes.Buffer{}
+	body := io.TeeReader(resp.Body, rawBody)
+	decoder := json.NewDecoder(body)
 	err = decoder.Decode(output)
 	if err != nil {
+		// Error parsing response body, are we logged out?
+		if rawBody.String() == "Session expired! Please re-login on the Pi-hole dashboard." {
+			// Login + re-attemp request
+			ph.login()
+			return ph.request(uri, qs, output)
+		}
+
 		return fmt.Errorf("Error parsing '%s' response: %w", uri, err)
 	}
 	return nil
