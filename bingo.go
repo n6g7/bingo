@@ -67,7 +67,7 @@ func main() {
 
 	err = bingo(ns, reg, conf)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("[FATAL] %s", err)
 	}
 	return
 }
