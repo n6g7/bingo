@@ -7,5 +7,5 @@ type Service struct {
 
 type Registry interface {
 	Init() error
-	ListFabioServices() ([]Service, error)
+	ListServices() ([]Service, error)
 }

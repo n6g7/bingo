@@ -105,7 +105,7 @@ func bingo(ns nameserver.Nameserver, reg registry.Registry, conf *config.Config)
 			}
 			reconciler.SetNameserverDomains(newNSDomains)
 		case <-regTick:
-			services, err := reg.ListFabioServices()
+			services, err := reg.ListServices()
 			if err != nil {
 				log.Printf("[ERROR] Error loading services from registry: %s", err)
 				continue

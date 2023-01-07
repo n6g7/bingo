@@ -53,7 +53,7 @@ func (c *ConsulRegistry) Init() error {
 	return nil
 }
 
-func (c *ConsulRegistry) ListFabioServices() ([]Service, error) {
+func (c *ConsulRegistry) ListServices() ([]Service, error) {
 	result, _, err := c.client.Catalog().Services(nil)
 	if err != nil {
 		return nil, fmt.Errorf("Error fetching services from Consul: %w", err)
