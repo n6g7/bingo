@@ -1,11 +1,11 @@
-package registry
+package proxy
 
 type Service struct {
 	Name   string
 	Domain string
 }
 
-type Registry interface {
+type Proxy interface {
 	Init() error
 	ListServices() ([]Service, error)
 }

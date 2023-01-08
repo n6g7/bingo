@@ -1,4 +1,4 @@
-package registry
+package proxy
 
 import (
 	"encoding/json"
@@ -9,18 +9,18 @@ import (
 	"github.com/n6g7/bingo/config"
 )
 
-type FabioRegistry struct {
+type FabioProxy struct {
 	hosts         []string
 	adminPort     uint16
 	scheme        string
 	serviceDomain string
 }
 
-func NewFabioRegistry(
+func NewFabioProxy(
 	conf config.FabioConf,
 	serviceDomain string,
-) (*FabioRegistry, error) {
-	return &FabioRegistry{
+) (*FabioProxy, error) {
+	return &FabioProxy{
 		conf.Hosts,
 		conf.AdminPort,
 		conf.Scheme,
@@ -28,7 +28,7 @@ func NewFabioRegistry(
 	}, nil
 }
 
-func (f *FabioRegistry) Init() error {
+func (f *FabioProxy) Init() error {
 	// Test connection
 	_, err := f.ListServices()
 	if err != nil {
@@ -50,7 +50,7 @@ type ResultService struct {
 	Pct99   uint   `json:"pct99"`
 }
 
-func (f *FabioRegistry) ListServices() ([]Service, error) {
+func (f *FabioProxy) ListServices() ([]Service, error) {
 	host := f.hosts[rand.Intn(len(f.hosts))]
 	port := fmt.Sprintf("%d", f.adminPort)
 	url := f.scheme + "://" + host + ":" + port + "/api/routes"

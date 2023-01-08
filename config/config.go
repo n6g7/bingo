@@ -1,23 +1,23 @@
 package config
 
 type Config struct {
-	Registry      Registry
+	Proxy         Proxy
 	Nameserver    Nameserver
 	ServiceDomain string
 	Targets       []string
 	LogLevel      string
 }
 
-// Registry
+// Proxy
 
-type RegistryType = string
+type ProxyType = string
 
 const (
-	Fabio RegistryType = "fabio"
+	Fabio ProxyType = "fabio"
 )
 
-type Registry struct {
-	Type  RegistryType
+type Proxy struct {
+	Type  ProxyType
 	Fabio FabioConf
 }
 

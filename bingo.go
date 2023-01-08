@@ -11,8 +11,8 @@ import (
 	"github.com/fabiolb/fabio/logger"
 	"github.com/n6g7/bingo/config"
 	"github.com/n6g7/bingo/nameserver"
+	"github.com/n6g7/bingo/proxy"
 	"github.com/n6g7/bingo/reconcile"
-	"github.com/n6g7/bingo/registry"
 )
 
 var version = "0.0.3"
@@ -33,17 +33,17 @@ func main() {
 	}
 	log.Printf("[DEBUG] Loaded config: %+v", conf)
 
-	// Load registry
-	var reg registry.Registry
+	// Load proxy
+	var prox proxy.Proxy
 
-	switch conf.Registry.Type {
+	switch conf.Proxy.Type {
 	case config.Fabio:
-		reg, err = registry.NewFabioRegistry(conf.Registry.Fabio, conf.ServiceDomain)
+		prox, err = proxy.NewFabioProxy(conf.Proxy.Fabio, conf.ServiceDomain)
 		if err != nil {
 			log.Fatalf("[FATAL] Fabio backend creation failed: %s", err)
 		}
 	default:
-		log.Fatalf("[FATAL] Unknown registry type '%s'", conf.Registry.Type)
+		log.Fatalf("[FATAL] Unknown proxy type '%s'", conf.Proxy.Type)
 	}
 
 	// Load nameserver
@@ -62,29 +62,29 @@ func main() {
 		log.Fatalf("[FATAL] Unknown nameserver type '%s'", conf.Nameserver.Type)
 	}
 
-	err = bingo(ns, reg, conf)
+	err = bingo(ns, prox, conf)
 	if err != nil {
 		log.Fatalf("[FATAL] %s", err)
 	}
 	return
 }
 
-func bingo(ns nameserver.Nameserver, reg registry.Registry, conf *config.Config) error {
+func bingo(ns nameserver.Nameserver, prox proxy.Proxy, conf *config.Config) error {
 	reconciler := reconcile.NewReconciler(ns, 30*time.Second, conf.Targets)
 
 	nsTick := time.Tick(1 * time.Minute)
-	regTick := time.Tick(5 * time.Second)
+	proxyTick := time.Tick(5 * time.Second)
 
 	err := ns.Init()
 	if err != nil {
 		return fmt.Errorf("Nameserver backend initialization failed: %w", err)
 	}
 	log.Printf("[INFO] Initialized '%s' backend", conf.Nameserver.Type)
-	err = reg.Init()
+	err = prox.Init()
 	if err != nil {
-		return fmt.Errorf("Registry backend initialization failed: %w", err)
+		return fmt.Errorf("Proxy backend initialization failed: %w", err)
 	}
-	log.Printf("[INFO] Initialized '%s' backend", conf.Registry.Type)
+	log.Printf("[INFO] Initialized '%s' backend", conf.Proxy.Type)
 
 	go reconciler.Run()
 
@@ -103,17 +103,17 @@ func bingo(ns nameserver.Nameserver, reg registry.Registry, conf *config.Config)
 				}
 			}
 			reconciler.SetNameserverDomains(newNSDomains)
-		case <-regTick:
-			services, err := reg.ListServices()
+		case <-proxyTick:
+			services, err := prox.ListServices()
 			if err != nil {
-				log.Printf("[ERROR] Error loading services from registry: %s", err)
+				log.Printf("[ERROR] Error loading services from proxy: %s", err)
 				continue
 			}
-			newRegDomains := reconcile.NewDomainSet()
+			newProxyDomains := reconcile.NewDomainSet()
 			for _, service := range services {
-				newRegDomains.Add(service.Domain)
+				newProxyDomains.Add(service.Domain)
 			}
-			reconciler.SetRegistryDomains(newRegDomains)
+			reconciler.SetProxyDomains(newProxyDomains)
 		default:
 			time.Sleep(100 * time.Millisecond)
 		}

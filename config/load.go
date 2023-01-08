@@ -8,16 +8,16 @@ import (
 )
 
 func Load() (*Config, error) {
-	viper.SetDefault("Registry.Type", Fabio)
-	viper.SetDefault("Registry.Fabio.AdminPort", "9998")
-	viper.SetDefault("Registry.Fabio.Scheme", "http")
+	viper.SetDefault("Proxy.Type", Fabio)
+	viper.SetDefault("Proxy.Fabio.AdminPort", "9998")
+	viper.SetDefault("Proxy.Fabio.Scheme", "http")
 	viper.SetDefault("Nameserver.Type", Pihole)
 	viper.SetDefault("LogLevel", "INFO")
 
-	viper.BindEnv("Registry.Type", "REGISTRY_TYPE")
-	viper.BindEnv("Registry.Fabio.Hosts", "FABIO_HOSTS")
-	viper.BindEnv("Registry.Fabio.AdminPort", "FABIO_ADMIN_PORT")
-	viper.BindEnv("Registry.Fabio.Scheme", "FABIO_SCHEME")
+	viper.BindEnv("Proxy.Type", "PROXY_TYPE")
+	viper.BindEnv("Proxy.Fabio.Hosts", "FABIO_HOSTS")
+	viper.BindEnv("Proxy.Fabio.AdminPort", "FABIO_ADMIN_PORT")
+	viper.BindEnv("Proxy.Fabio.Scheme", "FABIO_SCHEME")
 	viper.BindEnv("Nameserver.Type", "NAMESERVER_TYPE")
 	viper.BindEnv("Nameserver.Pihole.URL", "PIHOLE_URL")
 	viper.BindEnv("Nameserver.Pihole.Password", "PIHOLE_PASSWORD")
@@ -33,7 +33,7 @@ func Load() (*Config, error) {
 
 	// Manual fixes
 	config.Targets = strings.Split(config.Targets[0], " ")
-	config.Registry.Fabio.Hosts = strings.Split(config.Registry.Fabio.Hosts[0], " ")
+	config.Proxy.Fabio.Hosts = strings.Split(config.Proxy.Fabio.Hosts[0], " ")
 
 	return config, nil
 }

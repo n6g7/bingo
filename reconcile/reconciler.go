@@ -12,7 +12,7 @@ import (
 
 type Reconciler struct {
 	nameserverDomains  *DomainSet
-	registryDomains    *DomainSet
+	proxyDomains       *DomainSet
 	needsDiff          bool
 	nsBackend          nameserver.Nameserver
 	lastReconciliation time.Time
@@ -44,11 +44,11 @@ func (r *Reconciler) SetNameserverDomains(nsDomains *DomainSet) {
 	r.needsDiff = true
 }
 
-func (r *Reconciler) SetRegistryDomains(regDomains *DomainSet) {
-	if reflect.DeepEqual(regDomains, r.registryDomains) {
+func (r *Reconciler) SetProxyDomains(proxyDomains *DomainSet) {
+	if reflect.DeepEqual(proxyDomains, r.proxyDomains) {
 		return
 	}
-	r.registryDomains = regDomains
+	r.proxyDomains = proxyDomains
 	r.needsDiff = true
 }
 
@@ -57,13 +57,13 @@ func (r *Reconciler) Diff() (*DomainSet, *DomainSet) {
 		log.Println("[DEBUG] Reconciler not ready to diff, no nameserver domains yet")
 		return nil, nil
 	}
-	if r.registryDomains == nil {
-		log.Println("[DEBUG] Reconciler not ready to diff, no registry domains yet")
+	if r.proxyDomains == nil {
+		log.Println("[DEBUG] Reconciler not ready to diff, no proxy domains yet")
 		return nil, nil
 	}
 
-	toCreate := r.registryDomains.Diff(r.nameserverDomains)
-	toDelete := r.nameserverDomains.Diff(r.registryDomains)
+	toCreate := r.proxyDomains.Diff(r.nameserverDomains)
+	toDelete := r.nameserverDomains.Diff(r.proxyDomains)
 
 	return toCreate, toDelete
 }
@@ -100,10 +100,10 @@ func (r *Reconciler) Run() error {
 			toCreate, toDelete := r.Diff()
 
 			if (toCreate == nil || toCreate.Length() == 0) && (toDelete == nil || toDelete.Length() == 0) {
-				log.Println("[INFO] Registry and nameserver are in sync")
+				log.Println("[INFO] Proxy and nameserver are in sync")
 				r.needsDiff = false
 			} else {
-				log.Println("[INFO] Registry and nameserver are out of sync")
+				log.Println("[INFO] Proxy and nameserver are out of sync")
 
 				now := time.Now()
 				earliestReco := r.lastReconciliation.Add(r.minimumWait)
