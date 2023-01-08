@@ -52,7 +52,7 @@ services:
     restart: unless-stopped
 ```
 
-### Nomad
+### Nomad + Consul
 
 ```hcl
 job "bingo" {
@@ -76,7 +76,7 @@ job "bingo" {
         env = true
 
         data = <<EOH
-        FABIO_HOSTS=host1.local host2.local
+        FABIO_HOSTS="{{ range service "fabio" }}{{ .Address }} {{ end }}"
         PIHOLE_URL=http://pihole.local:80
         PIHOLE_PASSWORD="abc123"
         SERVICE_DOMAIN=svc.local
