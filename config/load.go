@@ -11,6 +11,8 @@ func Load() (*Config, error) {
 	viper.SetDefault("Registry.Type", Consul)
 	viper.SetDefault("Registry.Consul.Address", "localhost:8500")
 	viper.SetDefault("Registry.Consul.Scheme", "http")
+	viper.SetDefault("Registry.Fabio.AdminPort", "9998")
+	viper.SetDefault("Registry.Fabio.Scheme", "http")
 	viper.SetDefault("Nameserver.Type", Pihole)
 	viper.SetDefault("LogLevel", "INFO")
 
@@ -23,6 +25,9 @@ func Load() (*Config, error) {
 	viper.BindEnv("Registry.Consul.TLS.CAFile", "CONSUL_TLS_CAFILE")
 	viper.BindEnv("Registry.Consul.TLS.CAPath", "CONSUL_TLS_CAPATH")
 	viper.BindEnv("Registry.Consul.TLS.InsecureSkipVerify", "CONSUL_TLS_INSECURESKIPVERIFY")
+	viper.BindEnv("Registry.Fabio.Hosts", "FABIO_HOSTS")
+	viper.BindEnv("Registry.Fabio.AdminPort", "FABIO_ADMIN_PORT")
+	viper.BindEnv("Registry.Fabio.Scheme", "FABIO_SCHEME")
 	viper.BindEnv("Nameserver.Type", "NAMESERVER_TYPE")
 	viper.BindEnv("Nameserver.Pihole.URL", "PIHOLE_URL")
 	viper.BindEnv("Nameserver.Pihole.Password", "PIHOLE_PASSWORD")
@@ -38,6 +43,7 @@ func Load() (*Config, error) {
 
 	// Manual fixes
 	config.Targets = strings.Split(config.Targets[0], " ")
+	config.Registry.Fabio.Hosts = strings.Split(config.Registry.Fabio.Hosts[0], " ")
 
 	return config, nil
 }

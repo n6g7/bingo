@@ -45,6 +45,11 @@ func main() {
 		if err != nil {
 			log.Fatalf("[FATAL] Consul backend creation failed: %s", err)
 		}
+	case config.Fabio:
+		reg, err = registry.NewFabioRegistry(conf.Registry.Fabio, conf.ServiceDomain)
+		if err != nil {
+			log.Fatalf("[FATAL] Fabio backend creation failed: %s", err)
+		}
 	default:
 		log.Fatalf("[FATAL] Unknown registry type '%s'", conf.Registry.Type)
 	}

@@ -14,11 +14,13 @@ type RegistryType = string
 
 const (
 	Consul RegistryType = "consul"
+	Fabio               = "fabio"
 )
 
 type Registry struct {
 	Type   RegistryType
 	Consul ConsulConf
+	Fabio  FabioConf
 }
 
 type ConsulConf struct {
@@ -32,6 +34,12 @@ type ConsulConf struct {
 		CAPath             string
 		InsecureSkipVerify bool
 	}
+}
+
+type FabioConf struct {
+	Hosts     []string
+	AdminPort uint16
+	Scheme    string
 }
 
 // Nameserver
