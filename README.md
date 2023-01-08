@@ -31,7 +31,6 @@ docker run -d \
     -e PIHOLE_URL=http://pihole.local:80 \
     -e PIHOLE_PASSWORD=abc123 \
     -e SERVICE_DOMAIN=svc.local \
-    -e TARGETS="host1.local host2.local" \
     n6g7/bingo
 ```
 
@@ -48,7 +47,6 @@ services:
       PIHOLE_URL: http://pihole.local:80
       PIHOLE_PASSWORD: "abc123"
       SERVICE_DOMAIN: svc.local
-      TARGETS: host1.local host2.local
     restart: unless-stopped
 ```
 
@@ -80,7 +78,6 @@ job "bingo" {
         PIHOLE_URL=http://pihole.local:80
         PIHOLE_PASSWORD="abc123"
         SERVICE_DOMAIN=svc.local
-        TARGETS="{{ range service "fabio" }}{{ .Node }}.local {{ end }}"
         EOH
       }
 
@@ -108,7 +105,6 @@ All configuration is passed as environment variables.
 | `PIHOLE_URL`      | `http://pihole.local:80`  | Address of the Pi-hole instance.                         |
 | `PIHOLE_PASSWORD` | `abc123`                  | Pi-hole admin password.                                  |
 | `SERVICE_DOMAIN`  | `svc.local`               | Domain under which service subdomains should be created. |
-| `TARGETS`         | `host1.local host2.local` | Space-separated list of target domains.                  |
 
 ### Complete config
 
@@ -122,7 +118,6 @@ All configuration is passed as environment variables.
 | `PIHOLE_URL`       |          | Address of the Pi-hole instance.                                                                                                                                                                                         |
 | `PIHOLE_PASSWORD`  |          | Pi-hole admin password.                                                                                                                                                                                                  |
 | `SERVICE_DOMAIN`   |          | Domain under which service subdomains should be created. Any service with a declared domain that does not match "\*.$SERVICE_DOMAIN" will be ignored. Bingo only ever creates or deletes subdomains of `SERVICE_DOMAIN`. |
-| `TARGETS`          |          | Space-separated list of target domains to point to in managed CNAME records. When creating a new service domain, Bingo will pick a target at random in this list.                                                        |
 | `LOG_LEVEL`        | `INFO`   | Logging verbosity. Supports "TRACE", "DEBUG", "INFO", "WARN", "ERROR" and "FATAL".                                                                                                                                       |
 
 ## Backends

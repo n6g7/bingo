@@ -78,7 +78,7 @@ func main() {
 }
 
 func bingo(ns nameserver.Nameserver, prox proxy.Proxy, conf *config.Config) error {
-	reconciler := reconcile.NewReconciler(ns, 30*time.Second, conf.Targets)
+	reconciler := reconcile.NewReconciler(ns, prox, 30*time.Second)
 
 	nsTick := time.Tick(1 * time.Minute)
 	proxyTick := time.Tick(5 * time.Second)

@@ -37,6 +37,10 @@ func (f *FabioProxy) Init() error {
 	return nil
 }
 
+func (f *FabioProxy) randomHost() string {
+	return f.hosts[rand.Intn(len(f.hosts))]
+}
+
 type ResultService struct {
 	Service string `json:"service"`
 	Host    string `json:"host"`
@@ -51,7 +55,7 @@ type ResultService struct {
 }
 
 func (f *FabioProxy) ListServices() ([]Service, error) {
-	host := f.hosts[rand.Intn(len(f.hosts))]
+	host := f.randomHost()
 	port := fmt.Sprintf("%d", f.adminPort)
 	url := f.scheme + "://" + host + ":" + port + "/api/routes"
 	resp, err := http.Get(url)
@@ -82,4 +86,8 @@ func (f *FabioProxy) ListServices() ([]Service, error) {
 	}
 
 	return services, nil
+}
+
+func (f *FabioProxy) GetTarget(sourceDomain string) string {
+	return f.randomHost()
 }

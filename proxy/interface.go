@@ -8,4 +8,5 @@ type Service struct {
 type Proxy interface {
 	Init() error
 	ListServices() ([]Service, error)
+	GetTarget(sourceDomain string) string
 }

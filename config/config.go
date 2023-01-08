@@ -4,7 +4,6 @@ type Config struct {
 	Proxy         Proxy
 	Nameserver    Nameserver
 	ServiceDomain string
-	Targets       []string
 	LogLevel      string
 }
 

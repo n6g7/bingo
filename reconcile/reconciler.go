@@ -3,36 +3,36 @@ package reconcile
 import (
 	"fmt"
 	"log"
-	"math/rand"
 	"reflect"
 	"time"
 
 	"github.com/n6g7/bingo/nameserver"
+	"github.com/n6g7/bingo/proxy"
 )
 
 type Reconciler struct {
 	nameserverDomains  *DomainSet
 	proxyDomains       *DomainSet
 	needsDiff          bool
+	proxyBackend       proxy.Proxy
 	nsBackend          nameserver.Nameserver
 	lastReconciliation time.Time
 	minimumWait        time.Duration
-	targets            []string
 }
 
 func NewReconciler(
 	ns nameserver.Nameserver,
+	prox proxy.Proxy,
 	minimumWait time.Duration,
-	targets []string,
 ) *Reconciler {
 	return &Reconciler{
 		nil,
 		nil,
 		false,
+		prox,
 		ns,
 		time.Unix(0, 0),
 		minimumWait,
-		targets,
 	}
 }
 
@@ -73,8 +73,8 @@ func (r *Reconciler) Reconcile(toCreate, toDelete *DomainSet) error {
 
 	for domain := range toCreate.Iter() {
 		log.Printf("[INFO] Creating %s...", domain)
-		randomTarget := r.targets[rand.Intn(len(r.targets))]
-		err := r.nsBackend.AddRecord(domain, randomTarget)
+		target := r.proxyBackend.GetTarget(domain)
+		err := r.nsBackend.AddRecord(domain, target)
 		if err != nil {
 			return fmt.Errorf("Record creation failed: %w", err)
 		} else {

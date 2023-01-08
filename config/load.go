@@ -22,7 +22,6 @@ func Load() (*Config, error) {
 	viper.BindEnv("Nameserver.Pihole.URL", "PIHOLE_URL")
 	viper.BindEnv("Nameserver.Pihole.Password", "PIHOLE_PASSWORD")
 	viper.BindEnv("ServiceDomain", "SERVICE_DOMAIN")
-	viper.BindEnv("Targets", "TARGETS")
 	viper.BindEnv("LogLevel", "LOG_LEVEL")
 
 	config := &Config{}
@@ -32,7 +31,6 @@ func Load() (*Config, error) {
 	}
 
 	// Manual fixes
-	config.Targets = splitAndFilter(config.Targets[0])
 	config.Proxy.Fabio.Hosts = splitAndFilter(config.Proxy.Fabio.Hosts[0])
 
 	return config, nil
