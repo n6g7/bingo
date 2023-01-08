@@ -80,9 +80,6 @@ func main() {
 func bingo(ns nameserver.Nameserver, prox proxy.Proxy, conf *config.Config) error {
 	reconciler := reconcile.NewReconciler(ns, prox, 30*time.Second)
 
-	nsTick := time.Tick(1 * time.Minute)
-	proxyTick := time.Tick(5 * time.Second)
-
 	err := ns.Init()
 	if err != nil {
 		return fmt.Errorf("Nameserver backend initialization failed: %w", err)
@@ -96,36 +93,51 @@ func bingo(ns nameserver.Nameserver, prox proxy.Proxy, conf *config.Config) erro
 
 	go reconciler.Run()
 
+	onNameserverTick := func() {
+		records, err := ns.ListRecords()
+		if err != nil {
+			log.Printf("[ERROR] Error loading records from nameserver: %s", err)
+			return
+		}
+		newNSDomains := reconcile.NewDomainSet()
+		for _, record := range records {
+			if strings.HasSuffix(record.Name, conf.ServiceDomain) {
+				newNSDomains.Add(record.Name)
+			}
+			if !prox.IsValidTarget(record.Cname) {
+				log.Printf("[DEBUG] Domain \"%s\" points to invalid target \"%s\", marking it for deletion.", record.Name, record.Cname)
+				reconciler.MarkForDeletion(record.Name)
+			}
+		}
+		reconciler.SetNameserverDomains(newNSDomains)
+	}
+
+	onProxyTick := func() {
+		services, err := prox.ListServices()
+		if err != nil {
+			log.Printf("[ERROR] Error loading services from proxy: %s", err)
+			return
+		}
+		newProxyDomains := reconcile.NewDomainSet()
+		for _, service := range services {
+			newProxyDomains.Add(service.Domain)
+		}
+		reconciler.SetProxyDomains(newProxyDomains)
+	}
+
+	// Initial tick
+	onNameserverTick()
+	onProxyTick()
+
+	// Main loop
+	nameserverTick := time.Tick(1 * time.Minute)
+	proxyTick := time.Tick(5 * time.Second)
 	for {
 		select {
-		case <-nsTick:
-			records, err := ns.ListRecords()
-			if err != nil {
-				log.Printf("[ERROR] Error loading records from nameserver: %s", err)
-				continue
-			}
-			newNSDomains := reconcile.NewDomainSet()
-			for _, record := range records {
-				if strings.HasSuffix(record.Name, conf.ServiceDomain) {
-					newNSDomains.Add(record.Name)
-				}
-				if !prox.IsValidTarget(record.Cname) {
-					log.Printf("[DEBUG] Domain \"%s\" points to invalid target \"%s\", marking it for deletion.", record.Name, record.Cname)
-					reconciler.MarkForDeletion(record.Name)
-				}
-			}
-			reconciler.SetNameserverDomains(newNSDomains)
+		case <-nameserverTick:
+			onNameserverTick()
 		case <-proxyTick:
-			services, err := prox.ListServices()
-			if err != nil {
-				log.Printf("[ERROR] Error loading services from proxy: %s", err)
-				continue
-			}
-			newProxyDomains := reconcile.NewDomainSet()
-			for _, service := range services {
-				newProxyDomains.Add(service.Domain)
-			}
-			reconciler.SetProxyDomains(newProxyDomains)
+			onProxyTick()
 		default:
 			time.Sleep(100 * time.Millisecond)
 		}
