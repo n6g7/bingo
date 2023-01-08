@@ -15,13 +15,21 @@ import (
 	"github.com/n6g7/bingo/reconcile"
 )
 
-var version string
+var version = "dev"
 
 func main() {
 	logOutput := logger.NewLevelWriter(os.Stderr, "INFO", "2017/01/01 00:00:00 ")
 	log.SetOutput(logOutput)
 
-	log.Printf("[INFO] Bingo v%s starting", version)
+	var displayVersion string
+	if strings.Contains(version, ".") {
+		displayVersion = fmt.Sprintf("v%s", version)
+	} else if len(version) > 7 {
+		displayVersion = version[:7]
+	} else {
+		displayVersion = version
+	}
+	log.Printf("[INFO] Bingo %s starting", displayVersion)
 	log.Printf("[INFO] Go runtime is %s", runtime.Version())
 	conf, err := config.Load()
 	if err != nil {
