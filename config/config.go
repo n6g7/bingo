@@ -1,10 +1,15 @@
 package config
 
+import "time"
+
 type Config struct {
-	Proxy         Proxy
-	Nameserver    Nameserver
-	ServiceDomain string
-	LogLevel      string
+	Proxy                 Proxy
+	Nameserver            Nameserver
+	ServiceDomain         string
+	LogLevel              string
+	MainLoopTimeout       time.Duration
+	ReconciliationTimeout time.Duration
+	ReconcilerLoopTimeout time.Duration
 }
 
 // Proxy
@@ -16,8 +21,9 @@ const (
 )
 
 type Proxy struct {
-	Type  ProxyType
-	Fabio FabioConf
+	Type         ProxyType
+	PollInterval time.Duration
+	Fabio        FabioConf
 }
 
 type FabioConf struct {
@@ -35,8 +41,9 @@ const (
 )
 
 type Nameserver struct {
-	Type   NameserverType
-	Pihole PiholeConf
+	Type         NameserverType
+	PollInterval time.Duration
+	Pihole       PiholeConf
 }
 
 type PiholeConf struct {

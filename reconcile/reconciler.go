@@ -18,6 +18,7 @@ type Reconciler struct {
 	nsBackend          nameserver.Nameserver
 	lastReconciliation time.Time
 	minimumWait        time.Duration
+	loopTimeout        time.Duration
 	deletionQueue      *DomainSet
 }
 
@@ -25,6 +26,7 @@ func NewReconciler(
 	ns nameserver.Nameserver,
 	prox proxy.Proxy,
 	minimumWait time.Duration,
+	loopTimeout time.Duration,
 ) *Reconciler {
 	return &Reconciler{
 		nil,
@@ -34,6 +36,7 @@ func NewReconciler(
 		ns,
 		time.Unix(0, 0),
 		minimumWait,
+		loopTimeout,
 		NewDomainSet(),
 	}
 }
@@ -136,6 +139,6 @@ func (r *Reconciler) Run() error {
 			}
 		}
 
-		time.Sleep(500 * time.Millisecond)
+		time.Sleep(r.loopTimeout)
 	}
 }

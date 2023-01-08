@@ -78,7 +78,12 @@ func main() {
 }
 
 func bingo(ns nameserver.Nameserver, prox proxy.Proxy, conf *config.Config) error {
-	reconciler := reconcile.NewReconciler(ns, prox, 30*time.Second)
+	reconciler := reconcile.NewReconciler(
+		ns,
+		prox,
+		conf.ReconciliationTimeout,
+		conf.ReconcilerLoopTimeout,
+	)
 
 	err := ns.Init()
 	if err != nil {
@@ -130,8 +135,8 @@ func bingo(ns nameserver.Nameserver, prox proxy.Proxy, conf *config.Config) erro
 	onProxyTick()
 
 	// Main loop
-	nameserverTick := time.Tick(1 * time.Minute)
-	proxyTick := time.Tick(5 * time.Second)
+	nameserverTick := time.Tick(conf.Nameserver.PollInterval)
+	proxyTick := time.Tick(conf.Proxy.PollInterval)
 	for {
 		select {
 		case <-nameserverTick:
@@ -139,7 +144,7 @@ func bingo(ns nameserver.Nameserver, prox proxy.Proxy, conf *config.Config) erro
 		case <-proxyTick:
 			onProxyTick()
 		default:
-			time.Sleep(100 * time.Millisecond)
+			time.Sleep(conf.MainLoopTimeout)
 		}
 	}
 }
