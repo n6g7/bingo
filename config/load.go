@@ -32,8 +32,18 @@ func Load() (*Config, error) {
 	}
 
 	// Manual fixes
-	config.Targets = strings.Split(config.Targets[0], " ")
-	config.Proxy.Fabio.Hosts = strings.Split(config.Proxy.Fabio.Hosts[0], " ")
+	config.Targets = splitAndFilter(config.Targets[0])
+	config.Proxy.Fabio.Hosts = splitAndFilter(config.Proxy.Fabio.Hosts[0])
 
 	return config, nil
+}
+
+func splitAndFilter(data string) (ret []string) {
+	for _, val := range strings.Split(data, " ") {
+		if val == "" {
+			continue
+		}
+		ret = append(ret, val)
+	}
+	return
 }
