@@ -13,27 +13,12 @@ type Config struct {
 type RegistryType = string
 
 const (
-	Consul RegistryType = "consul"
-	Fabio               = "fabio"
+	Fabio RegistryType = "fabio"
 )
 
 type Registry struct {
-	Type   RegistryType
-	Consul ConsulConf
-	Fabio  FabioConf
-}
-
-type ConsulConf struct {
-	Address string
-	Scheme  string
-	Token   string
-	TLS     struct {
-		CertFile           string
-		KeyFile            string
-		CAFile             string
-		CAPath             string
-		InsecureSkipVerify bool
-	}
+	Type  RegistryType
+	Fabio FabioConf
 }
 
 type FabioConf struct {

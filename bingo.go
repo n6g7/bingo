@@ -37,14 +37,6 @@ func main() {
 	var reg registry.Registry
 
 	switch conf.Registry.Type {
-	case config.Consul:
-		reg, err = registry.NewConsulRegistry(
-			conf.Registry.Consul,
-			conf.ServiceDomain,
-		)
-		if err != nil {
-			log.Fatalf("[FATAL] Consul backend creation failed: %s", err)
-		}
 	case config.Fabio:
 		reg, err = registry.NewFabioRegistry(conf.Registry.Fabio, conf.ServiceDomain)
 		if err != nil {
