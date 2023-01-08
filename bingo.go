@@ -31,7 +31,7 @@ func main() {
 	if !logOutput.SetLevel(conf.LogLevel) {
 		log.Printf("[WARN] Cannot set log level to %s: %s", conf.LogLevel, err)
 	}
-	log.Printf("[DEBUG] Loaded config: %v", conf)
+	log.Printf("[DEBUG] Loaded config: %+v", conf)
 
 	// Load registry
 	var reg registry.Registry
@@ -82,10 +82,12 @@ func bingo(ns nameserver.Nameserver, reg registry.Registry, conf *config.Config)
 	if err != nil {
 		return fmt.Errorf("Nameserver backend initialization failed: %w", err)
 	}
+	log.Printf("[INFO] Initialized '%s' backend", conf.Nameserver.Type)
 	err = reg.Init()
 	if err != nil {
 		return fmt.Errorf("Registry backend initialization failed: %w", err)
 	}
+	log.Printf("[INFO] Initialized '%s' backend", conf.Registry.Type)
 
 	go reconciler.Run()
 
