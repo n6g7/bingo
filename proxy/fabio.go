@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/n6g7/bingo/config"
+	"golang.org/x/exp/slices"
 )
 
 type FabioProxy struct {
@@ -90,4 +91,8 @@ func (f *FabioProxy) ListServices() ([]Service, error) {
 
 func (f *FabioProxy) GetTarget(sourceDomain string) string {
 	return f.randomHost()
+}
+
+func (f *FabioProxy) IsValidTarget(target string) bool {
+	return slices.Contains(f.hosts, target)
 }

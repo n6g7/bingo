@@ -109,6 +109,10 @@ func bingo(ns nameserver.Nameserver, prox proxy.Proxy, conf *config.Config) erro
 				if strings.HasSuffix(record.Name, conf.ServiceDomain) {
 					newNSDomains.Add(record.Name)
 				}
+				if !prox.IsValidTarget(record.Cname) {
+					log.Printf("[DEBUG] Domain \"%s\" points to invalid target \"%s\", marking it for deletion.", record.Name, record.Cname)
+					reconciler.MarkForDeletion(record.Name)
+				}
 			}
 			reconciler.SetNameserverDomains(newNSDomains)
 		case <-proxyTick:

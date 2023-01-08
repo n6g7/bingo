@@ -18,6 +18,7 @@ type Reconciler struct {
 	nsBackend          nameserver.Nameserver
 	lastReconciliation time.Time
 	minimumWait        time.Duration
+	deletionQueue      *DomainSet
 }
 
 func NewReconciler(
@@ -33,6 +34,7 @@ func NewReconciler(
 		ns,
 		time.Unix(0, 0),
 		minimumWait,
+		NewDomainSet(),
 	}
 }
 
@@ -52,7 +54,12 @@ func (r *Reconciler) SetProxyDomains(proxyDomains *DomainSet) {
 	r.needsDiff = true
 }
 
-func (r *Reconciler) Diff() (*DomainSet, *DomainSet) {
+func (r *Reconciler) MarkForDeletion(domain string) {
+	r.deletionQueue.Add(domain)
+	r.needsDiff = true
+}
+
+func (r *Reconciler) Diff() (toCreate *DomainSet, toDelete *DomainSet) {
 	if r.nameserverDomains == nil {
 		log.Println("[DEBUG] Reconciler not ready to diff, no nameserver domains yet")
 		return nil, nil
@@ -62,14 +69,26 @@ func (r *Reconciler) Diff() (*DomainSet, *DomainSet) {
 		return nil, nil
 	}
 
-	toCreate := r.proxyDomains.Diff(r.nameserverDomains)
-	toDelete := r.nameserverDomains.Diff(r.proxyDomains)
+	toDelete = r.nameserverDomains.Diff(r.proxyDomains).Union(r.deletionQueue)                       // NS - P + D
+	toCreate = r.proxyDomains.Diff(r.nameserverDomains).Union(r.deletionQueue.Inter(r.proxyDomains)) // P - NS + (D&P)
 
-	return toCreate, toDelete
+	return
 }
 
 func (r *Reconciler) Reconcile(toCreate, toDelete *DomainSet) error {
 	r.lastReconciliation = time.Now()
+
+	// Start by deleting, gives us a chance to immediately recreate domains in
+	// the deletion queue that are in the proxy (they need a new target).
+	for domain := range toDelete.Iter() {
+		log.Printf("[INFO] Deleting %s...", domain)
+		err := r.nsBackend.RemoveRecord(domain)
+		if err != nil {
+			return fmt.Errorf("Record deletion failed: %w", err)
+		} else {
+			log.Println("[DEBUG] Done.")
+		}
+	}
 
 	for domain := range toCreate.Iter() {
 		log.Printf("[INFO] Creating %s...", domain)
@@ -77,15 +96,6 @@ func (r *Reconciler) Reconcile(toCreate, toDelete *DomainSet) error {
 		err := r.nsBackend.AddRecord(domain, target)
 		if err != nil {
 			return fmt.Errorf("Record creation failed: %w", err)
-		} else {
-			log.Println("[DEBUG] Done.")
-		}
-	}
-	for domain := range toDelete.Iter() {
-		log.Printf("[INFO] Deleting %s...", domain)
-		err := r.nsBackend.RemoveRecord(domain)
-		if err != nil {
-			return fmt.Errorf("Record deletion failed: %w", err)
 		} else {
 			log.Println("[DEBUG] Done.")
 		}
@@ -113,6 +123,7 @@ func (r *Reconciler) Run() error {
 					if err != nil {
 						log.Printf("[ERROR] Error during reconciliation, will attempt again: %s", err)
 					} else {
+						r.deletionQueue = NewDomainSet()
 						r.needsDiff = false
 					}
 				} else {
