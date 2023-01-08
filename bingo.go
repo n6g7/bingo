@@ -23,7 +23,7 @@ func main() {
 
 	var displayVersion string
 	if strings.Contains(version, ".") {
-		displayVersion = fmt.Sprintf("v%s", version)
+		displayVersion = version
 	} else if len(version) > 7 {
 		displayVersion = version[:7]
 	} else {
