@@ -76,11 +76,11 @@ job "bingo" {
         env = true
 
         data = <<EOH
-        FABIO_HOSTS="{{ range service "fabio" }}{{ .Address }} {{ end }}"
+        FABIO_HOSTS="{{ range service "fabio" }}{{ .Node }}.local {{ end }}"
         PIHOLE_URL=http://pihole.local:80
         PIHOLE_PASSWORD="abc123"
         SERVICE_DOMAIN=svc.local
-        TARGETS="host1.local host2.local"
+        TARGETS="{{ range service "fabio" }}{{ .Node }}.local {{ end }}"
         EOH
       }
 
