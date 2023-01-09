@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"runtime"
 	"strings"
@@ -13,6 +14,7 @@ import (
 	"github.com/n6g7/bingo/nameserver"
 	"github.com/n6g7/bingo/proxy"
 	"github.com/n6g7/bingo/reconcile"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 var version = "dev"
@@ -69,6 +71,8 @@ func main() {
 	default:
 		log.Fatalf("[FATAL] Unknown nameserver type '%s'", conf.Nameserver.Type)
 	}
+
+	go metrics(conf)
 
 	err = bingo(ns, prox, conf)
 	if err != nil {
@@ -147,4 +151,10 @@ func bingo(ns nameserver.Nameserver, prox proxy.Proxy, conf *config.Config) erro
 			time.Sleep(conf.MainLoopTimeout)
 		}
 	}
+}
+
+func metrics(conf *config.Config) {
+	http.Handle(conf.Prometheus.MetricsPath, promhttp.Handler())
+	log.Printf("[INFO] Starting prometheus exporter at %s%s", conf.Prometheus.ListenAddr, conf.Prometheus.MetricsPath)
+	http.ListenAndServe(conf.Prometheus.ListenAddr, nil)
 }

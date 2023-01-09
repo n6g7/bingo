@@ -8,6 +8,23 @@ import (
 
 	"github.com/n6g7/bingo/nameserver"
 	"github.com/n6g7/bingo/proxy"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
+)
+
+var (
+	deletionCounter = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "bingo_deleted_records",
+		Help: "The total number of deleted records",
+	})
+	creationCounter = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "bingo_created_records",
+		Help: "The total number of created records",
+	})
+	managedGauge = promauto.NewGauge(prometheus.GaugeOpts{
+		Name: "bingo_managed_records",
+		Help: "The number of managed records",
+	})
 )
 
 type Reconciler struct {
@@ -75,6 +92,8 @@ func (r *Reconciler) Diff() (toCreate *DomainSet, toDelete *DomainSet) {
 	toDelete = r.nameserverDomains.Diff(r.proxyDomains).Union(r.deletionQueue)                       // NS - P + D
 	toCreate = r.proxyDomains.Diff(r.nameserverDomains).Union(r.deletionQueue.Inter(r.proxyDomains)) // P - NS + (D&P)
 
+	managedGauge.Set(float64(r.proxyDomains.Length()))
+
 	return
 }
 
@@ -89,6 +108,7 @@ func (r *Reconciler) Reconcile(toCreate, toDelete *DomainSet) error {
 		if err != nil {
 			return fmt.Errorf("Record deletion failed: %w", err)
 		} else {
+			deletionCounter.Inc()
 			log.Println("[DEBUG] Done.")
 		}
 	}
@@ -100,6 +120,7 @@ func (r *Reconciler) Reconcile(toCreate, toDelete *DomainSet) error {
 		if err != nil {
 			return fmt.Errorf("Record creation failed: %w", err)
 		} else {
+			creationCounter.Inc()
 			log.Println("[DEBUG] Done.")
 		}
 	}

@@ -19,6 +19,8 @@ func Load() (*Config, error) {
 	viper.SetDefault("MainLoopTimeout", 1*time.Second)
 	viper.SetDefault("ReconciliationTimeout", 30*time.Second)
 	viper.SetDefault("ReconcilerLoopTimeout", 1*time.Second)
+	viper.SetDefault("Prometheus.ListenAddr", ":9100")
+	viper.SetDefault("Prometheus.MetricsPath", "/metrics")
 
 	viper.BindEnv("Proxy.Type", "PROXY_TYPE")
 	viper.BindEnv("Proxy.PollInterval", "PROXY_POLL_INTERVAL")
@@ -34,6 +36,8 @@ func Load() (*Config, error) {
 	viper.BindEnv("MainLoopTimeout", "MAIN_LOOP_TIMEOUT")
 	viper.BindEnv("ReconciliationTimeout", "RECONCILIATION_TIMEOUT")
 	viper.BindEnv("ReconcilerLoopTimeout", "RECONCILER_LOOP_TIMEOUT")
+	viper.BindEnv("Prometheus.ListenAddr", "PROMETHEUS_LISTEN_ADDR")
+	viper.BindEnv("Prometheus.MetricsPath", "PROMETHEUS_METRICS_PATH")
 
 	config := &Config{}
 	err := viper.Unmarshal(config)

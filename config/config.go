@@ -10,6 +10,7 @@ type Config struct {
 	MainLoopTimeout       time.Duration
 	ReconciliationTimeout time.Duration
 	ReconcilerLoopTimeout time.Duration
+	Prometheus            Prometheus
 }
 
 // Proxy
@@ -49,4 +50,11 @@ type Nameserver struct {
 type PiholeConf struct {
 	URL      string
 	Password string
+}
+
+// Metrics
+
+type Prometheus struct {
+	ListenAddr  string
+	MetricsPath string
 }
