@@ -154,7 +154,13 @@ func bingo(ns nameserver.Nameserver, prox proxy.Proxy, conf *config.Config) erro
 }
 
 func metrics(conf *config.Config) {
+	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, "{\"healthy\": true}")
+	})
 	http.Handle(conf.Prometheus.MetricsPath, promhttp.Handler())
+
 	log.Printf("[INFO] Starting prometheus exporter at %s%s", conf.Prometheus.ListenAddr, conf.Prometheus.MetricsPath)
 	http.ListenAndServe(conf.Prometheus.ListenAddr, nil)
 }
