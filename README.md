@@ -58,8 +58,23 @@ job "bingo" {
   type        = "service"
 
   group "bingo" {
+    network {
+      mode = "bridge"
+      port "metrics" {}
+    }
+
     service {
       name = "bingo"
+      tags = ["metrics"]
+      port = "metrics"
+
+      check {
+        name     = "http port alive"
+        type     = "http"
+        path     = "/health"
+        interval = "10s"
+        timeout  = "2s"
+      }
     }
 
     task "bingo" {
@@ -78,6 +93,7 @@ job "bingo" {
         PIHOLE_URL=http://pihole.local:80
         PIHOLE_PASSWORD="abc123"
         SERVICE_DOMAIN=svc.local
+        PROMETHEUS_LISTEN_ADDR=":{{ env "NOMAD_PORT_metrics" }}"
         EOH
       }
 
