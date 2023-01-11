@@ -96,9 +96,12 @@ func bingo(ns nameserver.Nameserver, prox proxy.Proxy, conf *config.Config) erro
 		}
 		newNSDomains := reconcile.NewDomainSet()
 		for _, record := range records {
-			if conf.IsServiceDomain(record.Name) {
-				newNSDomains.Add(record.Name)
+			// We only manage service domains
+			if !conf.IsServiceDomain(record.Name) {
+				continue
 			}
+
+			newNSDomains.Add(record.Name)
 			if !prox.IsValidTarget(record.Cname) {
 				log.Printf("[DEBUG] Domain \"%s\" points to invalid target \"%s\", marking it for deletion.", record.Name, record.Cname)
 				reconciler.MarkForDeletion(record.Name)
@@ -115,9 +118,12 @@ func bingo(ns nameserver.Nameserver, prox proxy.Proxy, conf *config.Config) erro
 		}
 		newProxyDomains := reconcile.NewDomainSet()
 		for _, service := range services {
-			if conf.IsServiceDomain(service.Domain) {
-				newProxyDomains.Add(service.Domain)
+			// We only manage service domains
+			if !conf.IsServiceDomain(service.Domain) {
+				continue
 			}
+
+			newProxyDomains.Add(service.Domain)
 		}
 		reconciler.SetProxyDomains(newProxyDomains)
 	}
