@@ -59,6 +59,8 @@ func main() {
 	switch conf.Nameserver.Type {
 	case config.Pihole:
 		ns = nameserver.NewPiholeNS(conf.Nameserver.Pihole)
+	case config.Route53:
+		ns = nameserver.NewRoute53NS(conf.Nameserver.Route53)
 	default:
 		log.Fatalf("[FATAL] Unknown nameserver type '%s'", conf.Nameserver.Type)
 	}
