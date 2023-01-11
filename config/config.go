@@ -1,6 +1,9 @@
 package config
 
-import "time"
+import (
+	"strings"
+	"time"
+)
 
 type Config struct {
 	Proxy                 Proxy
@@ -38,13 +41,15 @@ type FabioConf struct {
 type NameserverType = string
 
 const (
-	Pihole NameserverType = "pihole"
+	Pihole  NameserverType = "pihole"
+	Route53                = "route53"
 )
 
 type Nameserver struct {
 	Type         NameserverType
 	PollInterval time.Duration
 	Pihole       PiholeConf
+	Route53      Route53Conf
 }
 
 type PiholeConf struct {
@@ -52,9 +57,19 @@ type PiholeConf struct {
 	Password string
 }
 
+type Route53Conf struct {
+	HostedZone string
+	TTL        int64
+	AWSRegion  string
+}
+
 // Metrics
 
 type Prometheus struct {
 	ListenAddr  string
 	MetricsPath string
+}
+
+func (c *Config) IsServiceDomain(domain string) bool {
+	return strings.HasSuffix(domain, c.ServiceDomain)
 }
