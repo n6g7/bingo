@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/n6g7/bingo/config"
 	"github.com/n6g7/bingo/nameserver"
 	"github.com/n6g7/bingo/proxy"
 	"github.com/prometheus/client_golang/prometheus"
@@ -37,13 +38,13 @@ type Reconciler struct {
 	minimumWait        time.Duration
 	loopTimeout        time.Duration
 	deletionQueue      *DomainSet
+	conf               *config.Config
 }
 
 func NewReconciler(
 	ns nameserver.Nameserver,
 	prox proxy.Proxy,
-	minimumWait time.Duration,
-	loopTimeout time.Duration,
+	conf *config.Config,
 ) *Reconciler {
 	return &Reconciler{
 		nil,
@@ -52,9 +53,10 @@ func NewReconciler(
 		prox,
 		ns,
 		time.Unix(0, 0),
-		minimumWait,
-		loopTimeout,
+		conf.ReconciliationTimeout,
+		conf.ReconcilerLoopTimeout,
 		NewDomainSet(),
+		conf,
 	}
 }
 
@@ -103,6 +105,10 @@ func (r *Reconciler) Reconcile(toCreate, toDelete *DomainSet) error {
 	// Start by deleting, gives us a chance to immediately recreate domains in
 	// the deletion queue that are in the proxy (they need a new target).
 	for domain := range toDelete.Iter() {
+		if !r.conf.IsServiceDomain(domain) {
+			return fmt.Errorf("Won't delete \"%s\": not a service domain", domain)
+		}
+
 		log.Printf("[INFO] Deleting %s...", domain)
 		err := r.nsBackend.RemoveRecord(domain)
 		if err != nil {
@@ -114,6 +120,10 @@ func (r *Reconciler) Reconcile(toCreate, toDelete *DomainSet) error {
 	}
 
 	for domain := range toCreate.Iter() {
+		if !r.conf.IsServiceDomain(domain) {
+			return fmt.Errorf("Won't create \"%s\": not a service domain", domain)
+		}
+
 		log.Printf("[INFO] Creating %s...", domain)
 		target := r.proxyBackend.GetTarget(domain)
 		err := r.nsBackend.AddRecord(domain, target)

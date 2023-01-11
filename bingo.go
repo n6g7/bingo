@@ -61,10 +61,7 @@ func main() {
 
 	switch conf.Nameserver.Type {
 	case config.Pihole:
-		ns, err = nameserver.NewPiholeNS(
-			conf.Nameserver.Pihole,
-			conf.ServiceDomain,
-		)
+		ns, err = nameserver.NewPiholeNS(conf.Nameserver.Pihole)
 		if err != nil {
 			log.Fatalf("[FATAL] Pihole backend creation failed: %s", err)
 		}
@@ -82,12 +79,7 @@ func main() {
 }
 
 func bingo(ns nameserver.Nameserver, prox proxy.Proxy, conf *config.Config) error {
-	reconciler := reconcile.NewReconciler(
-		ns,
-		prox,
-		conf.ReconciliationTimeout,
-		conf.ReconcilerLoopTimeout,
-	)
+	reconciler := reconcile.NewReconciler(ns, prox, conf)
 
 	err := ns.Init()
 	if err != nil {
@@ -110,7 +102,7 @@ func bingo(ns nameserver.Nameserver, prox proxy.Proxy, conf *config.Config) erro
 		}
 		newNSDomains := reconcile.NewDomainSet()
 		for _, record := range records {
-			if strings.HasSuffix(record.Name, conf.ServiceDomain) {
+			if conf.IsServiceDomain(record.Name) {
 				newNSDomains.Add(record.Name)
 			}
 			if !prox.IsValidTarget(record.Cname) {
@@ -129,7 +121,9 @@ func bingo(ns nameserver.Nameserver, prox proxy.Proxy, conf *config.Config) erro
 		}
 		newProxyDomains := reconcile.NewDomainSet()
 		for _, service := range services {
-			newProxyDomains.Add(service.Domain)
+			if conf.IsServiceDomain(service.Domain) {
+				newProxyDomains.Add(service.Domain)
+			}
 		}
 		reconciler.SetProxyDomains(newProxyDomains)
 	}

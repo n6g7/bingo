@@ -1,6 +1,9 @@
 package config
 
-import "time"
+import (
+	"strings"
+	"time"
+)
 
 type Config struct {
 	Proxy                 Proxy
@@ -57,4 +60,8 @@ type PiholeConf struct {
 type Prometheus struct {
 	ListenAddr  string
 	MetricsPath string
+}
+
+func (c *Config) IsServiceDomain(domain string) bool {
+	return strings.HasSuffix(domain, c.ServiceDomain)
 }

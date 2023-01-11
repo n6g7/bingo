@@ -10,17 +10,15 @@ import (
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
-	"strings"
 
 	"github.com/lizongying/go-xpath/xpath"
 	"github.com/n6g7/bingo/config"
 )
 
 type PiholeNS struct {
-	baseURL       string
-	password      string
-	client        *http.Client
-	serviceDomain string
+	baseURL  string
+	password string
+	client   *http.Client
 }
 
 func initClient() (*http.Client, error) {
@@ -39,7 +37,7 @@ func initClient() (*http.Client, error) {
 	return client, nil
 }
 
-func NewPiholeNS(conf config.PiholeConf, serviceDomain string) (*PiholeNS, error) {
+func NewPiholeNS(conf config.PiholeConf) (*PiholeNS, error) {
 	client, err := initClient()
 	if err != nil {
 		return nil, fmt.Errorf("Pihole client creation failed: %w", err)
@@ -48,7 +46,6 @@ func NewPiholeNS(conf config.PiholeConf, serviceDomain string) (*PiholeNS, error
 		conf.URL,
 		conf.Password,
 		client,
-		serviceDomain,
 	}, nil
 }
 
@@ -121,10 +118,6 @@ type ListResult struct {
 	Data [][]string `json:"data"`
 }
 
-func (ph *PiholeNS) isServiceDomain(domain string) bool {
-	return strings.HasSuffix(domain, ph.serviceDomain)
-}
-
 func (ph *PiholeNS) ListRecords() ([]Record, error) {
 	output := &ListResult{}
 	err := ph.request(
@@ -138,9 +131,7 @@ func (ph *PiholeNS) ListRecords() ([]Record, error) {
 
 	records := []Record{}
 	for _, row := range output.Data {
-		if ph.isServiceDomain(row[0]) {
-			records = append(records, Record{row[0], row[1]})
-		}
+		records = append(records, Record{row[0], row[1]})
 	}
 	return records, nil
 }
@@ -151,10 +142,6 @@ type GenericResult struct {
 }
 
 func (ph *PiholeNS) AddRecord(name, cname string) error {
-	if !ph.isServiceDomain(name) {
-		return fmt.Errorf("%s isn't a service domain", name)
-	}
-
 	output := &GenericResult{}
 	err := ph.request(
 		"/admin/scripts/pi-hole/php/customcname.php",
@@ -177,10 +164,6 @@ func (ph *PiholeNS) AddRecord(name, cname string) error {
 }
 
 func (ph *PiholeNS) RemoveRecord(name string) error {
-	if !ph.isServiceDomain(name) {
-		return fmt.Errorf("%s isn't a service domain", name)
-	}
-
 	// We need to know the target domain in order to delete ...
 	records, err := ph.ListRecords()
 	if err != nil {
