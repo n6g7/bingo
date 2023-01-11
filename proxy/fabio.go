@@ -11,22 +11,17 @@ import (
 )
 
 type FabioProxy struct {
-	hosts         []string
-	adminPort     uint16
-	scheme        string
-	serviceDomain string
+	hosts     []string
+	adminPort uint16
+	scheme    string
 }
 
-func NewFabioProxy(
-	conf config.FabioConf,
-	serviceDomain string,
-) (*FabioProxy, error) {
+func NewFabioProxy(conf config.FabioConf) *FabioProxy {
 	return &FabioProxy{
-		conf.Hosts,
-		conf.AdminPort,
-		conf.Scheme,
-		serviceDomain,
-	}, nil
+		hosts:     conf.Hosts,
+		adminPort: conf.AdminPort,
+		scheme:    conf.Scheme,
+	}
 }
 
 func (f *FabioProxy) Init() error {

@@ -37,16 +37,11 @@ func initClient() (*http.Client, error) {
 	return client, nil
 }
 
-func NewPiholeNS(conf config.PiholeConf) (*PiholeNS, error) {
-	client, err := initClient()
-	if err != nil {
-		return nil, fmt.Errorf("Pihole client creation failed: %w", err)
-	}
+func NewPiholeNS(conf config.PiholeConf) *PiholeNS {
 	return &PiholeNS{
-		conf.URL,
-		conf.Password,
-		client,
-	}, nil
+		baseURL:  conf.URL,
+		password: conf.Password,
+	}
 }
 
 func (ph *PiholeNS) login() error {
@@ -65,6 +60,11 @@ func (ph *PiholeNS) login() error {
 }
 
 func (ph *PiholeNS) Init() error {
+	client, err := initClient()
+	if err != nil {
+		return fmt.Errorf("Pihole client creation failed: %w", err)
+	}
+	ph.client = client
 	return ph.login()
 }
 

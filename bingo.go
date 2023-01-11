@@ -48,10 +48,7 @@ func main() {
 
 	switch conf.Proxy.Type {
 	case config.Fabio:
-		prox, err = proxy.NewFabioProxy(conf.Proxy.Fabio, conf.ServiceDomain)
-		if err != nil {
-			log.Fatalf("[FATAL] Fabio backend creation failed: %s", err)
-		}
+		prox = proxy.NewFabioProxy(conf.Proxy.Fabio)
 	default:
 		log.Fatalf("[FATAL] Unknown proxy type '%s'", conf.Proxy.Type)
 	}
@@ -61,10 +58,7 @@ func main() {
 
 	switch conf.Nameserver.Type {
 	case config.Pihole:
-		ns, err = nameserver.NewPiholeNS(conf.Nameserver.Pihole)
-		if err != nil {
-			log.Fatalf("[FATAL] Pihole backend creation failed: %s", err)
-		}
+		ns = nameserver.NewPiholeNS(conf.Nameserver.Pihole)
 	default:
 		log.Fatalf("[FATAL] Unknown nameserver type '%s'", conf.Nameserver.Type)
 	}
