@@ -38,16 +38,16 @@ func (f *FabioProxy) randomHost() string {
 }
 
 type ResultService struct {
-	Service string `json:"service"`
-	Host    string `json:"host"`
-	Path    string `json:"path"`
-	Src     string `json:"src"`
-	Dst     string `json:"dst"`
-	Opts    string `json:"opts"`
-	Weight  uint   `json:"weight"`
-	Cmd     string `json:"cmd"`
-	Rate1   uint   `json:"rate1"`
-	Pct99   uint   `json:"pct99"`
+	Service string  `json:"service"`
+	Host    string  `json:"host"`
+	Path    string  `json:"path"`
+	Src     string  `json:"src"`
+	Dst     string  `json:"dst"`
+	Opts    string  `json:"opts"`
+	Weight  float32 `json:"weight"`
+	Cmd     string  `json:"cmd"`
+	Rate1   uint    `json:"rate1"`
+	Pct99   uint    `json:"pct99"`
 }
 
 func (f *FabioProxy) ListServices() ([]Service, error) {
