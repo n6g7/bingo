@@ -21,19 +21,28 @@ type Config struct {
 type ProxyType = string
 
 const (
-	Fabio ProxyType = "fabio"
+	Fabio   ProxyType = "fabio"
+	Traefik           = "traefik"
 )
 
 type Proxy struct {
 	Type         ProxyType
 	PollInterval time.Duration
 	Fabio        FabioConf
+	Traefik      TraefikConf
 }
 
 type FabioConf struct {
 	Hosts     []string
 	AdminPort uint16
 	Scheme    string
+}
+
+type TraefikConf struct {
+	Hosts       []string
+	AdminPort   uint16
+	Scheme      string
+	EntryPoints []string
 }
 
 // Nameserver

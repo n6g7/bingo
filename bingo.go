@@ -49,6 +49,8 @@ func main() {
 	switch conf.Proxy.Type {
 	case config.Fabio:
 		prox = proxy.NewFabioProxy(conf.Proxy.Fabio)
+	case config.Traefik:
+		prox = proxy.NewTraefikProxy(conf.Proxy.Traefik)
 	default:
 		log.Fatalf("[FATAL] Unknown proxy type '%s'", conf.Proxy.Type)
 	}

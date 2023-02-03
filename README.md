@@ -153,10 +153,11 @@ All configuration is passed as environment variables.
 
 ### Reverse proxies
 
-| Name                                  | Status                                                    |
-| ------------------------------------- | --------------------------------------------------------- |
-| [Fabio](https://fabiolb.net/)         | ✅ Supported                                              |
-| [Træfik](https://traefik.io/traefik/) | ⏳ [Issue opened](https://github.com/n6g7/bingo/issues/9) |
+| Name                                  | Status       |
+| ------------------------------------- | ------------ |
+| [Fabio](https://fabiolb.net/)         | ✅ Supported |
+| [Træfik](https://traefik.io/traefik/) | ✅ Supported |
+| [HAProxy]()                           | No issue     |
 
 ### Nameservers
 
