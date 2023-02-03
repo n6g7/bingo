@@ -132,6 +132,10 @@ All configuration is passed as environment variables.
 | `FABIO_HOSTS`              |             | List of space-separated hosts where Fabio is running.                                                                                                                                                                    |
 | `FABIO_ADMIN_PORT`         | `9998`      | Fabio's [admin UI port](https://fabiolb.net/ref/ui.addr/).                                                                                                                                                               |
 | `FABIO_SCHEME`             | `http`      | URI scheme for Fabio                                                                                                                                                                                                     |
+| `TRAEFIK_HOSTS`            |             | List of space-separated hosts where Traefik is running.                                                                                                                                                                  |
+| `TRAEFIK_ADMIN_PORT`       | `8080`      | Traefik's [API port](https://doc.traefik.io/traefik/operations/api/).                                                                                                                                                    |
+| `TRAEFIK_SCHEME`           | `http`      | URI scheme for Traefik                                                                                                                                                                                                   |
+| `TRAEFIK_ENTRYPOINTS`      |             | List of space-separated Traefik entrypoints to watch. Only services mapped to these entry points will be managed.                                                                                                        |
 | `NAMESERVER_TYPE`          | `pihole`    | The type of nameserver to managed records in. Supports "pihole" or "route53".                                                                                                                                            |
 | `NAMESERVER_POLL_INTERVAL` | `30s`       | Time interval between requests to nameserver.                                                                                                                                                                            |
 | `PIHOLE_URL`               |             | Address of the Pi-hole instance.                                                                                                                                                                                         |
@@ -153,11 +157,11 @@ All configuration is passed as environment variables.
 
 ### Reverse proxies
 
-| Name                                  | Status       |
-| ------------------------------------- | ------------ |
-| [Fabio](https://fabiolb.net/)         | ✅ Supported |
-| [Træfik](https://traefik.io/traefik/) | ✅ Supported |
-| [HAProxy]()                           | No issue     |
+| Name                                  | Status       | Notes                                                                                                        |
+| ------------------------------------- | ------------ | ------------------------------------------------------------------------------------------------------------ |
+| [Fabio](https://fabiolb.net/)         | ✅ Supported |                                                                                                              |
+| [Træfik](https://traefik.io/traefik/) | ✅ Supported | The Træfik backend requires the [Traefik API](https://doc.traefik.io/traefik/operations/api/) to be enabled. |
+| [HAProxy]()                           | No issue     |                                                                                                              |
 
 ### Nameservers
 
