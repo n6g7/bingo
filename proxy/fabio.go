@@ -37,7 +37,7 @@ func (f *FabioProxy) randomHost() string {
 	return f.hosts[rand.Intn(len(f.hosts))]
 }
 
-type ResultService struct {
+type FabioService struct {
 	Service string  `json:"service"`
 	Host    string  `json:"host"`
 	Path    string  `json:"path"`
@@ -63,7 +63,7 @@ func (f *FabioProxy) ListServices() ([]Service, error) {
 	}
 
 	// Parse response body
-	output := []ResultService{}
+	output := []FabioService{}
 	decoder := json.NewDecoder(resp.Body)
 	err = decoder.Decode(&output)
 	if err != nil {
