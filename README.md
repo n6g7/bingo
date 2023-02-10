@@ -2,7 +2,7 @@
 
 Bingo automates the creation of DNS records for services served by a reverse proxy.
 
-The original idea (and currently only supported scenario) was to run alongside [Fabio](https://fabiolb.net/) ([hence](https://fabiolb.net/faq/why-fabio/) [the name](https://www.answers.com/movies-and-television/What_names_is_Nemo_called_by_Dory_in_Finding_Nemo)).
+The original idea was to run alongside [Fabio](https://fabiolb.net/) ([hence](https://fabiolb.net/faq/why-fabio/) [the name](https://www.answers.com/movies-and-television/What_names_is_Nemo_called_by_Dory_in_Finding_Nemo)).
 
 ## Architecture
 
