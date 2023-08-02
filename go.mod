@@ -1,6 +1,6 @@
 module github.com/n6g7/bingo
 
-go 1.19
+go 1.20
 
 require (
 	github.com/aws/aws-sdk-go-v2/config v1.18.8
