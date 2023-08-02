@@ -36,6 +36,13 @@ func (s *Set[T]) Contains(key T) bool {
 	return found && val
 }
 
+func (s *Set[T]) AsSlice() (slice []T) {
+	for item := range s.Iter() {
+		slice = append(slice, item)
+	}
+	return
+}
+
 func (s *Set[T]) Inter(other *Set[T]) (inter *Set[T]) {
 	var small, big *Set[T]
 	if s.Length() < other.Length() {
