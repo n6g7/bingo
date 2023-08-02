@@ -139,6 +139,8 @@ func (r *Reconciler) Reconcile(toCreate, toDelete *DomainSet) error {
 }
 
 func (r *Reconciler) Run() error {
+	tooEarlyWarningSent := false
+
 	for {
 		if r.needsDiff {
 			toCreate, toDelete := r.Diff()
@@ -160,12 +162,14 @@ func (r *Reconciler) Run() error {
 						r.deletionQueue = NewDomainSet()
 						r.needsDiff = false
 					}
-				} else {
+					tooEarlyWarningSent = false
+				} else if !tooEarlyWarningSent {
 					log.Printf(
 						"[DEBUG] Last reconciliation was less than %s ago, will attempt again in %s\n",
 						r.minimumWait,
 						earliestReco.Sub(now).Round(time.Second),
 					)
+					tooEarlyWarningSent = true
 				}
 			}
 		}
