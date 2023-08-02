@@ -3,7 +3,6 @@ package reconcile
 import (
 	"fmt"
 	"log"
-	"reflect"
 	"time"
 
 	"github.com/n6g7/bingo/config"
@@ -61,17 +60,13 @@ func NewReconciler(
 }
 
 func (r *Reconciler) SetNameserverDomains(nsDomains *DomainSet) {
-	if reflect.DeepEqual(nsDomains, r.nameserverDomains) {
-		return
-	}
+	log.Printf("[TRACE] Received NS domains: %v", nsDomains.AsSlice())
 	r.nameserverDomains = nsDomains
 	r.needsDiff = true
 }
 
 func (r *Reconciler) SetProxyDomains(proxyDomains *DomainSet) {
-	if reflect.DeepEqual(proxyDomains, r.proxyDomains) {
-		return
-	}
+	log.Printf("[TRACE] Received proxy domains: %v", proxyDomains.AsSlice())
 	r.proxyDomains = proxyDomains
 	r.needsDiff = true
 }
@@ -140,16 +135,23 @@ func (r *Reconciler) Reconcile(toCreate, toDelete *DomainSet) error {
 
 func (r *Reconciler) Run() error {
 	tooEarlyWarningSent := false
+	previouslyInSync := false
 
 	for {
 		if r.needsDiff {
 			toCreate, toDelete := r.Diff()
 
 			if (toCreate == nil || toCreate.Length() == 0) && (toDelete == nil || toDelete.Length() == 0) {
-				log.Println("[INFO] Proxy and nameserver are in sync")
+				if !previouslyInSync {
+					log.Println("[INFO] Proxy and nameserver are in sync")
+					previouslyInSync = true
+				}
 				r.needsDiff = false
 			} else {
-				log.Println("[INFO] Proxy and nameserver are out of sync")
+				if previouslyInSync {
+					log.Println("[INFO] Proxy and nameserver are out of sync")
+					previouslyInSync = false
+				}
 
 				now := time.Now()
 				earliestReco := r.lastReconciliation.Add(r.minimumWait)
