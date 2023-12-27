@@ -67,7 +67,7 @@ func Load() (*Config, error) {
 		config.Proxy.Traefik.EntryPoints = splitAndFilter(config.Proxy.Traefik.EntryPoints[0])
 	}
 
-	return config, nil
+	return config, config.Validate()
 }
 
 func splitAndFilter(data string) (ret []string) {

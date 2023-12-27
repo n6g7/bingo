@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"strings"
 	"time"
 )
@@ -81,4 +82,13 @@ type Prometheus struct {
 
 func (c *Config) IsServiceDomain(domain string) bool {
 	return strings.HasSuffix(domain, c.ServiceDomain)
+}
+
+func (c *Config) Validate() error {
+	if c.Proxy.Type == Fabio {
+		if len(c.Proxy.Fabio.Hosts) == 0 {
+			return fmt.Errorf("there must be at least one Fabio host in the config.")
+		}
+	}
+	return nil
 }
