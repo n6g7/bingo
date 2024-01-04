@@ -20,7 +20,7 @@ import (
 var version = "dev"
 
 func main() {
-	logOutput := logger.NewLevelWriter(os.Stderr, "INFO", "2017/01/01 00:00:00 ")
+	logOutput := logger.NewLevelWriter(os.Stderr, "INFO", "2017/01/01 00:00:00.000000 ")
 	log.SetOutput(logOutput)
 	log.SetFlags(log.Ldate | log.Ltime | log.Lmicroseconds | log.LUTC)
 
