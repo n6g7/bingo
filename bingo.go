@@ -22,6 +22,7 @@ var version = "dev"
 func main() {
 	logOutput := logger.NewLevelWriter(os.Stderr, "INFO", "2017/01/01 00:00:00 ")
 	log.SetOutput(logOutput)
+	log.SetFlags(log.Ldate | log.Ltime | log.Lmicroseconds | log.LUTC)
 
 	var displayVersion string
 	if strings.Contains(version, ".") {
