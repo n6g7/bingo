@@ -8,8 +8,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/n6g7/bingo/config"
-	"github.com/n6g7/bingo/set"
+	"github.com/n6g7/bingo/internal/config"
+	"github.com/n6g7/bingo/internal/set"
 	"golang.org/x/exp/slices"
 )
 

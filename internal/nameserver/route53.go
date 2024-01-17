@@ -8,7 +8,7 @@ import (
 	awsConfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/route53"
 	"github.com/aws/aws-sdk-go-v2/service/route53/types"
-	"github.com/n6g7/bingo/config"
+	"github.com/n6g7/bingo/internal/config"
 )
 
 type Route53NS struct {

@@ -10,7 +10,7 @@
       "request": "launch",
       "mode": "auto",
       "program": "${fileDirname}",
-      "envFile": "${fileDirname}/dev.env"
+      "envFile": "${workspaceFolder}/dev.env"
     }
   ]
 }

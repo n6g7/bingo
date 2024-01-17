@@ -6,7 +6,7 @@ import (
 	"math/rand"
 	"net/http"
 
-	"github.com/n6g7/bingo/config"
+	"github.com/n6g7/bingo/internal/config"
 	"golang.org/x/exp/slices"
 )
 

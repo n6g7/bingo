@@ -1,6 +1,6 @@
 package reconcile
 
-import "github.com/n6g7/bingo/set"
+import "github.com/n6g7/bingo/internal/set"
 
 type DomainSet = set.Set[string]
 

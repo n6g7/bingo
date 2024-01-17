@@ -12,7 +12,7 @@ import (
 	"net/url"
 
 	"github.com/lizongying/go-xpath/xpath"
-	"github.com/n6g7/bingo/config"
+	"github.com/n6g7/bingo/internal/config"
 )
 
 type PiholeNS struct {

@@ -10,10 +10,10 @@ import (
 	"time"
 
 	"github.com/fabiolb/fabio/logger"
-	"github.com/n6g7/bingo/config"
-	"github.com/n6g7/bingo/nameserver"
-	"github.com/n6g7/bingo/proxy"
-	"github.com/n6g7/bingo/reconcile"
+	"github.com/n6g7/bingo/internal/config"
+	"github.com/n6g7/bingo/internal/nameserver"
+	"github.com/n6g7/bingo/internal/proxy"
+	"github.com/n6g7/bingo/internal/reconcile"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
