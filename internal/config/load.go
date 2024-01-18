@@ -3,7 +3,6 @@ package config
 import (
 	"fmt"
 	"log/slog"
-	"strings"
 	"time"
 
 	"github.com/mitchellh/mapstructure"
@@ -53,31 +52,15 @@ func Load() (*Config, error) {
 	viper.BindEnv("Prometheus.MetricsPath", "PROMETHEUS_METRICS_PATH")
 
 	config := &Config{}
-	err := viper.Unmarshal(config, viper.DecodeHook(mapstructure.TextUnmarshallerHookFunc()))
+	err := viper.Unmarshal(config, viper.DecodeHook(
+		mapstructure.ComposeDecodeHookFunc(
+			mapstructure.StringToSliceHookFunc(","),
+			mapstructure.TextUnmarshallerHookFunc(),
+		),
+	))
 	if err != nil {
 		return nil, fmt.Errorf("couldn't parse config: %w", err)
 	}
 
-	// Manual fixes
-	if len(config.Proxy.Fabio.Hosts) > 0 {
-		config.Proxy.Fabio.Hosts = splitAndFilter(config.Proxy.Fabio.Hosts[0])
-	}
-	if len(config.Proxy.Traefik.Hosts) > 0 {
-		config.Proxy.Traefik.Hosts = splitAndFilter(config.Proxy.Traefik.Hosts[0])
-	}
-	if len(config.Proxy.Traefik.EntryPoints) > 0 {
-		config.Proxy.Traefik.EntryPoints = splitAndFilter(config.Proxy.Traefik.EntryPoints[0])
-	}
-
 	return config, config.Validate()
-}
-
-func splitAndFilter(data string) (ret []string) {
-	for _, val := range strings.Split(data, " ") {
-		if val == "" {
-			continue
-		}
-		ret = append(ret, val)
-	}
-	return
 }
