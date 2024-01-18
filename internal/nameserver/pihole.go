@@ -6,16 +6,17 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
 
 	"github.com/lizongying/go-xpath/xpath"
 	"github.com/n6g7/bingo/internal/config"
+	"github.com/n6g7/nomtail/pkg/log"
 )
 
 type PiholeNS struct {
+	logger   *log.Logger
 	baseURL  string
 	password string
 	client   *http.Client
@@ -28,7 +29,7 @@ func initClient() (*http.Client, error) {
 	}
 	jar, err := cookiejar.New(nil)
 	if err != nil {
-		return nil, fmt.Errorf("Cookie jar creation failed: %w", err)
+		return nil, fmt.Errorf("cookie jar creation failed: %w", err)
 	}
 	client := &http.Client{
 		Transport: transport,
@@ -37,8 +38,9 @@ func initClient() (*http.Client, error) {
 	return client, nil
 }
 
-func NewPiholeNS(conf config.PiholeConf) *PiholeNS {
+func NewPiholeNS(logger *log.Logger, conf config.PiholeConf) *PiholeNS {
 	return &PiholeNS{
+		logger:   logger.With("component", "pi-hole"),
 		baseURL:  conf.URL,
 		password: conf.Password,
 	}
@@ -50,19 +52,19 @@ func (ph *PiholeNS) login() error {
 		url.Values{"pw": {ph.password}},
 	)
 	if err != nil {
-		return fmt.Errorf("Pihole login failed: %w", err)
+		return fmt.Errorf("pi-hole login failed: %w", err)
 	}
 	if resp.StatusCode != 200 {
-		return fmt.Errorf("Pi-hole login failed")
+		return fmt.Errorf("pi-hole login failed")
 	}
-	log.Println("[DEBUG] Pi-hole login successful")
+	ph.logger.Debug("pi-hole login successful")
 	return nil
 }
 
 func (ph *PiholeNS) Init() error {
 	client, err := initClient()
 	if err != nil {
-		return fmt.Errorf("Pihole client creation failed: %w", err)
+		return fmt.Errorf("pi-hole client creation failed: %w", err)
 	}
 	ph.client = client
 	return ph.login()
@@ -83,17 +85,17 @@ func (ph *PiholeNS) getCSRFToken() (string, error) {
 func (ph *PiholeNS) request(uri string, qs url.Values, output any) error {
 	token, err := ph.getCSRFToken()
 	if err != nil {
-		return fmt.Errorf("Error fetching CSRF token: %w", err)
+		return fmt.Errorf("error fetching CSRF token: %w", err)
 	}
 	qs.Add("token", token)
 
 	resp, err := ph.client.PostForm(ph.baseURL+uri, qs)
 	if err != nil {
-		return fmt.Errorf("Pihole request to '%s' failed: %w", uri, err)
+		return fmt.Errorf("pi-hole request to '%s' failed: %w", uri, err)
 	}
 
 	if resp.StatusCode != 200 {
-		return fmt.Errorf("Unexpected status code while querying %s: %d", uri, resp.StatusCode)
+		return fmt.Errorf("unexpected status code while querying %s: %d", uri, resp.StatusCode)
 	}
 
 	// Attempt parsing body
@@ -109,7 +111,7 @@ func (ph *PiholeNS) request(uri string, qs url.Values, output any) error {
 			return ph.request(uri, qs, output)
 		}
 
-		return fmt.Errorf("Error parsing '%s' response: %w", uri, err)
+		return fmt.Errorf("error parsing '%s' response: %w", uri, err)
 	}
 	return nil
 }
@@ -157,7 +159,7 @@ func (ph *PiholeNS) AddRecord(name, cname string) error {
 	}
 
 	if !output.Success {
-		return fmt.Errorf("Error while creating record for '%s': %s", name, output.Message)
+		return fmt.Errorf("error while creating record for '%s': %s", name, output.Message)
 	}
 
 	return nil
@@ -177,7 +179,7 @@ func (ph *PiholeNS) RemoveRecord(name string) error {
 		}
 	}
 	if target == "" {
-		return fmt.Errorf("Couldn't find target for domain %s", name)
+		return fmt.Errorf("couldn't find target for domain %s", name)
 	}
 
 	output := &GenericResult{}
@@ -195,7 +197,7 @@ func (ph *PiholeNS) RemoveRecord(name string) error {
 	}
 
 	if !output.Success {
-		return fmt.Errorf("Error while deleting record for '%s': %s", name, output.Message)
+		return fmt.Errorf("error while deleting record for '%s': %s", name, output.Message)
 	}
 
 	return nil

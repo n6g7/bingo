@@ -2,12 +2,12 @@ package reconcile
 
 import (
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/n6g7/bingo/internal/config"
 	"github.com/n6g7/bingo/internal/nameserver"
 	"github.com/n6g7/bingo/internal/proxy"
+	"github.com/n6g7/nomtail/pkg/log"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
@@ -28,6 +28,7 @@ var (
 )
 
 type Reconciler struct {
+	logger             *log.Logger
 	nameserverDomains  *DomainSet
 	proxyDomains       *DomainSet
 	needsDiff          bool
@@ -41,11 +42,13 @@ type Reconciler struct {
 }
 
 func NewReconciler(
+	logger *log.Logger,
 	ns nameserver.Nameserver,
 	prox proxy.Proxy,
 	conf *config.Config,
 ) *Reconciler {
 	return &Reconciler{
+		logger.With("component", "reconciler"),
 		nil,
 		nil,
 		false,
@@ -60,13 +63,13 @@ func NewReconciler(
 }
 
 func (r *Reconciler) SetNameserverDomains(nsDomains *DomainSet) {
-	log.Printf("[TRACE] Received NS domains: %v", nsDomains.AsSlice())
+	r.logger.Trace("received NS domains", "domains", nsDomains.AsSlice())
 	r.nameserverDomains = nsDomains
 	r.needsDiff = true
 }
 
 func (r *Reconciler) SetProxyDomains(proxyDomains *DomainSet) {
-	log.Printf("[TRACE] Received proxy domains: %v", proxyDomains.AsSlice())
+	r.logger.Trace("received proxy domains", "domains", proxyDomains.AsSlice())
 	r.proxyDomains = proxyDomains
 	r.needsDiff = true
 }
@@ -78,11 +81,11 @@ func (r *Reconciler) MarkForDeletion(domain string) {
 
 func (r *Reconciler) Diff() (toCreate *DomainSet, toDelete *DomainSet) {
 	if r.nameserverDomains == nil {
-		log.Println("[DEBUG] Reconciler not ready to diff, no nameserver domains yet")
+		r.logger.Debug("reconciler not ready to diff, no nameserver domains yet")
 		return nil, nil
 	}
 	if r.proxyDomains == nil {
-		log.Println("[DEBUG] Reconciler not ready to diff, no proxy domains yet")
+		r.logger.Debug("reconciler not ready to diff, no proxy domains yet")
 		return nil, nil
 	}
 
@@ -101,32 +104,32 @@ func (r *Reconciler) Reconcile(toCreate, toDelete *DomainSet) error {
 	// the deletion queue that are in the proxy (they need a new target).
 	for domain := range toDelete.Iter() {
 		if !r.conf.IsServiceDomain(domain) {
-			return fmt.Errorf("Won't delete \"%s\": not a service domain", domain)
+			return fmt.Errorf("won't delete \"%s\": not a service domain", domain)
 		}
 
-		log.Printf("[INFO] Deleting %s...", domain)
+		r.logger.Info("deleting domain...", "domain", domain)
 		err := r.nsBackend.RemoveRecord(domain)
 		if err != nil {
-			return fmt.Errorf("Record deletion failed: %w", err)
+			return fmt.Errorf("record deletion failed: %w", err)
 		} else {
 			deletionCounter.Inc()
-			log.Println("[DEBUG] Done.")
+			r.logger.Debug("deleted domain", "domain", domain)
 		}
 	}
 
 	for domain := range toCreate.Iter() {
 		if !r.conf.IsServiceDomain(domain) {
-			return fmt.Errorf("Won't create \"%s\": not a service domain", domain)
+			return fmt.Errorf("won't create \"%s\": not a service domain", domain)
 		}
 
-		log.Printf("[INFO] Creating %s...", domain)
+		r.logger.Info("creating domain...", "domain", domain)
 		target := r.proxyBackend.GetTarget(domain)
 		err := r.nsBackend.AddRecord(domain, target)
 		if err != nil {
-			return fmt.Errorf("Record creation failed: %w", err)
+			return fmt.Errorf("record creation failed: %w", err)
 		} else {
 			creationCounter.Inc()
-			log.Println("[DEBUG] Done.")
+			r.logger.Debug("created domain", "domain", domain)
 		}
 	}
 
@@ -143,33 +146,33 @@ func (r *Reconciler) Run() error {
 
 			if (toCreate == nil || toCreate.Length() == 0) && (toDelete == nil || toDelete.Length() == 0) {
 				if !previouslyInSync {
-					log.Println("[INFO] Proxy and nameserver are in sync")
+					r.logger.Info("proxy and nameserver are in sync")
 					previouslyInSync = true
 				}
 				r.needsDiff = false
 			} else {
 				if previouslyInSync {
-					log.Println("[INFO] Proxy and nameserver are out of sync")
+					r.logger.Info("proxy and nameserver are out of sync")
 					previouslyInSync = false
 				}
 
 				now := time.Now()
 				earliestReco := r.lastReconciliation.Add(r.minimumWait)
 				if now.After(earliestReco) {
-					log.Println("[DEBUG] Starting reconciliation...")
+					r.logger.Debug("starting reconciliation...")
 					err := r.Reconcile(toCreate, toDelete)
 					if err != nil {
-						log.Printf("[ERROR] Error during reconciliation, will attempt again: %s", err)
+						r.logger.Error("error during reconciliation, will attempt again", "err", err)
 					} else {
 						r.deletionQueue = NewDomainSet()
 						r.needsDiff = false
 					}
 					tooEarlyWarningSent = false
 				} else if !tooEarlyWarningSent {
-					log.Printf(
-						"[DEBUG] Last reconciliation was less than %s ago, will attempt again in %s\n",
-						r.minimumWait,
-						earliestReco.Sub(now).Round(time.Second),
+					r.logger.Debug(
+						"net enough tme has passed since the last reconciliation",
+						"minimum_wait", r.minimumWait,
+						"next_attempt_in", earliestReco.Sub(now).Round(time.Second),
 					)
 					tooEarlyWarningSent = true
 				}

@@ -65,10 +65,10 @@ func (t *TraefikProxy) ListServices() ([]Service, error) {
 	url := t.scheme + "://" + host + ":" + port + "/api/http/routers"
 	resp, err := http.Get(url)
 	if err != nil {
-		return nil, fmt.Errorf("Error querying Traefik services: %w", err)
+		return nil, fmt.Errorf("error querying Traefik services: %w", err)
 	}
 	if resp.StatusCode != 200 {
-		return nil, fmt.Errorf("Traefik returned an unexpected status code: %d", resp.StatusCode)
+		return nil, fmt.Errorf("traefik returned an unexpected status code: %d", resp.StatusCode)
 	}
 
 	// Parse response body
@@ -76,7 +76,7 @@ func (t *TraefikProxy) ListServices() ([]Service, error) {
 	decoder := json.NewDecoder(resp.Body)
 	err = decoder.Decode(&output)
 	if err != nil {
-		return nil, fmt.Errorf("Error parsing Traefik routers body: %w", err)
+		return nil, fmt.Errorf("error parsing Traefik routers body: %w", err)
 	}
 
 	services := []Service{}
@@ -107,7 +107,6 @@ func (t *TraefikProxy) ListServices() ([]Service, error) {
 		}
 	}
 
-	fmt.Printf("%v", services)
 	return services, nil
 }
 

@@ -2,9 +2,11 @@ package config
 
 import (
 	"fmt"
+	"log/slog"
 	"strings"
 	"time"
 
+	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/viper"
 )
 
@@ -19,7 +21,7 @@ func Load() (*Config, error) {
 	viper.SetDefault("Nameserver.PollInterval", 30*time.Second)
 	viper.SetDefault("Nameserver.Route53.TTL", 3600)
 	viper.SetDefault("Nameserver.Route53.AWSRegion", "us-west-1")
-	viper.SetDefault("LogLevel", "INFO")
+	viper.SetDefault("LogLevel", slog.LevelInfo)
 	viper.SetDefault("MainLoopTimeout", 1*time.Second)
 	viper.SetDefault("ReconciliationTimeout", 30*time.Second)
 	viper.SetDefault("ReconcilerLoopTimeout", 1*time.Second)
@@ -51,9 +53,9 @@ func Load() (*Config, error) {
 	viper.BindEnv("Prometheus.MetricsPath", "PROMETHEUS_METRICS_PATH")
 
 	config := &Config{}
-	err := viper.Unmarshal(config)
+	err := viper.Unmarshal(config, viper.DecodeHook(mapstructure.TextUnmarshallerHookFunc()))
 	if err != nil {
-		return nil, fmt.Errorf("Couldn't parse config: %w", err)
+		return nil, fmt.Errorf("couldn't parse config: %w", err)
 	}
 
 	// Manual fixes

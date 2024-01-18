@@ -2,47 +2,32 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"runtime"
-	"strings"
 	"time"
 
-	"github.com/fabiolb/fabio/logger"
 	"github.com/n6g7/bingo/internal/config"
 	"github.com/n6g7/bingo/internal/nameserver"
 	"github.com/n6g7/bingo/internal/proxy"
 	"github.com/n6g7/bingo/internal/reconcile"
+	"github.com/n6g7/nomtail/pkg/log"
+	"github.com/n6g7/nomtail/pkg/version"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
-var version = "dev"
-
 func main() {
-	logOutput := logger.NewLevelWriter(os.Stderr, "INFO", "2017/01/01 00:00:00.000000 ")
-	log.SetOutput(logOutput)
-	log.SetFlags(log.Ldate | log.Ltime | log.Lmicroseconds | log.LUTC)
+	logger := log.SetupLogger()
+	logger.Info("Bingo starting", "version", version.Display(), "go_runtime", runtime.Version())
 
-	var displayVersion string
-	if strings.Contains(version, ".") {
-		displayVersion = version
-	} else if len(version) > 7 {
-		displayVersion = version[:7]
-	} else {
-		displayVersion = version
-	}
-	log.Printf("[INFO] Bingo %s starting", displayVersion)
-	log.Printf("[INFO] Go runtime is %s", runtime.Version())
 	conf, err := config.Load()
 	if err != nil {
-		log.Fatalf("[FATAL] Failed to load config: %s", err)
+		logger.Error("failed to load config", "err", err)
+		os.Exit(1)
 	}
-	log.Printf("[INFO] Setting log level to %s", conf.LogLevel)
-	if !logOutput.SetLevel(conf.LogLevel) {
-		log.Printf("[WARN] Cannot set log level to %s: %s", conf.LogLevel, err)
-	}
-	log.Printf("[DEBUG] Loaded config: %+v", conf)
+	logger.Info("setting log level", "level", conf.LogLevel)
+	log.SetLevel(conf.LogLevel)
+	logger.Debug("loaded config", "config", conf)
 
 	// Load proxy
 	var prox proxy.Proxy
@@ -53,7 +38,8 @@ func main() {
 	case config.Traefik:
 		prox = proxy.NewTraefikProxy(conf.Proxy.Traefik)
 	default:
-		log.Fatalf("[FATAL] Unknown proxy type '%s'", conf.Proxy.Type)
+		logger.Error("unknown proxy type", "type", conf.Proxy.Type)
+		os.Exit(1)
 	}
 
 	// Load nameserver
@@ -61,42 +47,44 @@ func main() {
 
 	switch conf.Nameserver.Type {
 	case config.Pihole:
-		ns = nameserver.NewPiholeNS(conf.Nameserver.Pihole)
+		ns = nameserver.NewPiholeNS(logger, conf.Nameserver.Pihole)
 	case config.Route53:
-		ns = nameserver.NewRoute53NS(conf.Nameserver.Route53)
+		ns = nameserver.NewRoute53NS(logger, conf.Nameserver.Route53)
 	default:
-		log.Fatalf("[FATAL] Unknown nameserver type '%s'", conf.Nameserver.Type)
+		logger.Error("unknown nameserver type", "type", conf.Nameserver.Type)
+		os.Exit(1)
 	}
 
-	go metrics(conf)
+	go metrics(logger, conf)
 
-	err = bingo(ns, prox, conf)
+	err = bingo(logger, ns, prox, conf)
 	if err != nil {
-		log.Fatalf("[FATAL] %s", err)
+		logger.Error("Bingo stopped with an error", "err", err)
+		os.Exit(1)
 	}
 	return
 }
 
-func bingo(ns nameserver.Nameserver, prox proxy.Proxy, conf *config.Config) error {
-	reconciler := reconcile.NewReconciler(ns, prox, conf)
+func bingo(logger *log.Logger, ns nameserver.Nameserver, prox proxy.Proxy, conf *config.Config) error {
+	reconciler := reconcile.NewReconciler(logger, ns, prox, conf)
 
 	err := ns.Init()
 	if err != nil {
 		return fmt.Errorf("Nameserver backend initialization failed: %w", err)
 	}
-	log.Printf("[INFO] Initialized '%s' backend", conf.Nameserver.Type)
+	logger.Info("initialized nameserver backend", "type", conf.Nameserver.Type)
 	err = prox.Init()
 	if err != nil {
 		return fmt.Errorf("Proxy backend initialization failed: %w", err)
 	}
-	log.Printf("[INFO] Initialized '%s' backend", conf.Proxy.Type)
+	logger.Info("initialized proxy backend", "type", conf.Proxy.Type)
 
 	go reconciler.Run()
 
 	onNameserverTick := func() {
 		records, err := ns.ListRecords()
 		if err != nil {
-			log.Printf("[ERROR] Error loading records from nameserver: %s", err)
+			logger.Error("error loading records from nameserver", "err", err)
 			return
 		}
 		newNSDomains := reconcile.NewDomainSet()
@@ -108,7 +96,7 @@ func bingo(ns nameserver.Nameserver, prox proxy.Proxy, conf *config.Config) erro
 
 			newNSDomains.Add(record.Name)
 			if !prox.IsValidTarget(record.Cname) {
-				log.Printf("[DEBUG] Domain \"%s\" points to invalid target \"%s\", marking it for deletion.", record.Name, record.Cname)
+				logger.Debug("domain points to invalid target, marking it for deletion.", "domain", record.Name, "target", record.Cname)
 				reconciler.MarkForDeletion(record.Name)
 			}
 		}
@@ -118,7 +106,7 @@ func bingo(ns nameserver.Nameserver, prox proxy.Proxy, conf *config.Config) erro
 	onProxyTick := func() {
 		services, err := prox.ListServices()
 		if err != nil {
-			log.Printf("[ERROR] Error loading services from proxy: %s", err)
+			logger.Error("error loading services from proxy", "err", err)
 			return
 		}
 		newProxyDomains := reconcile.NewDomainSet()
@@ -152,7 +140,7 @@ func bingo(ns nameserver.Nameserver, prox proxy.Proxy, conf *config.Config) erro
 	}
 }
 
-func metrics(conf *config.Config) {
+func metrics(logger *log.Logger, conf *config.Config) {
 	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
@@ -160,6 +148,6 @@ func metrics(conf *config.Config) {
 	})
 	http.Handle(conf.Prometheus.MetricsPath, promhttp.Handler())
 
-	log.Printf("[INFO] Starting prometheus exporter at %s%s", conf.Prometheus.ListenAddr, conf.Prometheus.MetricsPath)
+	logger.Info("starting prometheus exporter", "addr", conf.Prometheus.ListenAddr, "metrics_path", conf.Prometheus.MetricsPath)
 	http.ListenAndServe(conf.Prometheus.ListenAddr, nil)
 }

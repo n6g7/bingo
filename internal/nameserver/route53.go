@@ -3,15 +3,16 @@ package nameserver
 import (
 	"context"
 	"fmt"
-	"log"
 
 	awsConfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/route53"
 	"github.com/aws/aws-sdk-go-v2/service/route53/types"
 	"github.com/n6g7/bingo/internal/config"
+	"github.com/n6g7/nomtail/pkg/log"
 )
 
 type Route53NS struct {
+	logger     *log.Logger
 	hostedZone *string
 	recordType types.RRType
 	ttl        *int64
@@ -21,8 +22,9 @@ type Route53NS struct {
 	client       *route53.Client
 }
 
-func NewRoute53NS(conf config.Route53Conf) *Route53NS {
+func NewRoute53NS(logger *log.Logger, conf config.Route53Conf) *Route53NS {
 	return &Route53NS{
+		logger:     logger.With("component", "route53"),
 		hostedZone: &conf.HostedZone,
 		recordType: types.RRTypeCname,
 		ttl:        &conf.TTL,
@@ -36,7 +38,7 @@ func (r *Route53NS) Init() error {
 		awsConfig.WithRegion(r.region),
 	)
 	if err != nil {
-		return fmt.Errorf("Error loading AWS config :%w", err)
+		return fmt.Errorf("error loading AWS config :%w", err)
 	}
 
 	client := route53.NewFromConfig(cfg)
@@ -47,16 +49,16 @@ func (r *Route53NS) Init() error {
 		DNSName: r.hostedZone,
 	})
 	if err != nil {
-		return fmt.Errorf("Error listing hosted zones: %w", err)
+		return fmt.Errorf("error listing hosted zones: %w", err)
 	}
 	if len(output.HostedZones) > 1 {
-		return fmt.Errorf("Found multiple (%d) hosted zones matching DNS name \"%s\", try a different name?", len(output.HostedZones), *r.hostedZone)
+		return fmt.Errorf("found multiple (%d) hosted zones matching DNS name \"%s\", try a different name?", len(output.HostedZones), *r.hostedZone)
 	}
 	if len(output.HostedZones) == 0 {
-		return fmt.Errorf("Could not find a hosted zone with DNS name \"%s\"", *r.hostedZone)
+		return fmt.Errorf("could not find a hosted zone with DNS name \"%s\"", *r.hostedZone)
 	}
 	r.hostedZoneId = output.HostedZones[0].Id
-	log.Printf("[DEBUG] Found hosted zone \"%s\" with id \"%s\"", *r.hostedZone, *r.hostedZoneId)
+	r.logger.Debug("found hosted zone", "hosted_zone", *r.hostedZone, "id", *r.hostedZoneId)
 
 	return nil
 }
@@ -69,7 +71,7 @@ func (r *Route53NS) listRecordSets() ([]types.ResourceRecordSet, error) {
 		},
 	)
 	if err != nil {
-		return nil, fmt.Errorf("Error listing records sets in %s: %w", *r.hostedZone, err)
+		return nil, fmt.Errorf("error listing records sets in %s: %w", *r.hostedZone, err)
 	}
 	return outputs.ResourceRecordSets, nil
 }
@@ -109,7 +111,7 @@ func (r *Route53NS) RemoveRecord(name string) error {
 	}
 
 	if selectedRRS == nil {
-		return fmt.Errorf("Could not find record set for \"%s\", nothing to delete.", name)
+		return fmt.Errorf("could not find record set for \"%s\", nothing to delete", name)
 	}
 
 	_, err = r.client.ChangeResourceRecordSets(context.TODO(), &route53.ChangeResourceRecordSetsInput{
@@ -124,7 +126,7 @@ func (r *Route53NS) RemoveRecord(name string) error {
 		},
 	})
 	if err != nil {
-		return fmt.Errorf("Error while deleting record set \"%s\": %w", name, err)
+		return fmt.Errorf("error while deleting record set \"%s\": %w", name, err)
 	}
 	return nil
 }
@@ -151,7 +153,7 @@ func (r *Route53NS) AddRecord(name, cname string) error {
 		},
 	})
 	if err != nil {
-		return fmt.Errorf("Error while creating record \"%s\": %w", name, err)
+		return fmt.Errorf("error while creating record \"%s\": %w", name, err)
 	}
 	return nil
 }

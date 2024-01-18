@@ -56,10 +56,10 @@ func (f *FabioProxy) ListServices() ([]Service, error) {
 	url := f.scheme + "://" + host + ":" + port + "/api/routes"
 	resp, err := http.Get(url)
 	if err != nil {
-		return nil, fmt.Errorf("Error querying Fabio routes: %w", err)
+		return nil, fmt.Errorf("error querying Fabio routes: %w", err)
 	}
 	if resp.StatusCode != 200 {
-		return nil, fmt.Errorf("Fabio returned an unexpected status code: %d", resp.StatusCode)
+		return nil, fmt.Errorf("fabio returned an unexpected status code: %d", resp.StatusCode)
 	}
 
 	// Parse response body
@@ -67,7 +67,7 @@ func (f *FabioProxy) ListServices() ([]Service, error) {
 	decoder := json.NewDecoder(resp.Body)
 	err = decoder.Decode(&output)
 	if err != nil {
-		return nil, fmt.Errorf("Error parsing Fabio routes body: %w", err)
+		return nil, fmt.Errorf("error parsing Fabio routes body: %w", err)
 	}
 
 	services := []Service{}

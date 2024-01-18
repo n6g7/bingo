@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"log/slog"
 	"strings"
 	"time"
 )
@@ -10,7 +11,7 @@ type Config struct {
 	Proxy                 Proxy
 	Nameserver            Nameserver
 	ServiceDomain         string
-	LogLevel              string
+	LogLevel              slog.Level
 	MainLoopTimeout       time.Duration
 	ReconciliationTimeout time.Duration
 	ReconcilerLoopTimeout time.Duration
@@ -23,7 +24,7 @@ type ProxyType = string
 
 const (
 	Fabio   ProxyType = "fabio"
-	Traefik           = "traefik"
+	Traefik ProxyType = "traefik"
 )
 
 type Proxy struct {
@@ -52,7 +53,7 @@ type NameserverType = string
 
 const (
 	Pihole  NameserverType = "pihole"
-	Route53                = "route53"
+	Route53 NameserverType = "route53"
 )
 
 type Nameserver struct {
@@ -87,7 +88,7 @@ func (c *Config) IsServiceDomain(domain string) bool {
 func (c *Config) Validate() error {
 	if c.Proxy.Type == Fabio {
 		if len(c.Proxy.Fabio.Hosts) == 0 {
-			return fmt.Errorf("there must be at least one Fabio host in the config.")
+			return fmt.Errorf("there must be at least one Fabio host in the config")
 		}
 	}
 	return nil
