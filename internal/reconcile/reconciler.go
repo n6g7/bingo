@@ -2,6 +2,7 @@ package reconcile
 
 import (
 	"fmt"
+	"reflect"
 	"time"
 
 	"github.com/n6g7/bingo/internal/config"
@@ -64,12 +65,18 @@ func NewReconciler(
 
 func (r *Reconciler) SetNameserverDomains(nsDomains *DomainSet) {
 	r.logger.Trace("received NS domains", "domains", nsDomains.AsSlice())
+	if reflect.DeepEqual(nsDomains, r.nameserverDomains) {
+		return
+	}
 	r.nameserverDomains = nsDomains
 	r.needsDiff = true
 }
 
 func (r *Reconciler) SetProxyDomains(proxyDomains *DomainSet) {
 	r.logger.Trace("received proxy domains", "domains", proxyDomains.AsSlice())
+	if reflect.DeepEqual(proxyDomains, r.proxyDomains) {
+		return
+	}
 	r.proxyDomains = proxyDomains
 	r.needsDiff = true
 }
