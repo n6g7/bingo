@@ -7,6 +7,7 @@ import (
 	"runtime"
 	"time"
 
+	mapset "github.com/deckarep/golang-set/v2"
 	"github.com/n6g7/bingo/internal/config"
 	"github.com/n6g7/bingo/internal/nameserver"
 	"github.com/n6g7/bingo/internal/proxy"
@@ -87,7 +88,7 @@ func bingo(logger *log.Logger, ns nameserver.Nameserver, prox proxy.Proxy, conf 
 			logger.Error("error loading records from nameserver", "err", err)
 			return
 		}
-		newNSDomains := reconcile.NewDomainSet()
+		newNSDomains := mapset.NewSet[string]()
 		for _, record := range records {
 			// We only manage service domains
 			if !conf.IsServiceDomain(record.Name) {
@@ -109,7 +110,7 @@ func bingo(logger *log.Logger, ns nameserver.Nameserver, prox proxy.Proxy, conf 
 			logger.Error("error loading services from proxy", "err", err)
 			return
 		}
-		newProxyDomains := reconcile.NewDomainSet()
+		newProxyDomains := mapset.NewSet[string]()
 		for _, service := range services {
 			// We only manage service domains
 			if !conf.IsServiceDomain(service.Domain) {

@@ -7,7 +7,9 @@ toolchain go1.21.5
 require (
 	github.com/aws/aws-sdk-go-v2/config v1.18.8
 	github.com/aws/aws-sdk-go-v2/service/route53 v1.26.0
+	github.com/deckarep/golang-set/v2 v2.6.0
 	github.com/lizongying/go-xpath v0.0.0-20221013102623-3e55fa3ceeed
+	github.com/mitchellh/mapstructure v1.5.0
 	github.com/n6g7/nomtail v0.2.0
 	github.com/prometheus/client_golang v1.17.0
 	github.com/spf13/viper v1.14.0
@@ -36,7 +38,6 @@ require (
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/magiconair/properties v1.8.6 // indirect
 	github.com/matttproud/golang_protobuf_extensions/v2 v2.0.0 // indirect
-	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/pelletier/go-toml v1.9.5 // indirect
 	github.com/pelletier/go-toml/v2 v2.0.5 // indirect
 	github.com/prometheus/client_model v0.4.1-0.20230718164431-9a2bf3000d16 // indirect

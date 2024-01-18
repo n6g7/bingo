@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"time"
 
+	mapset "github.com/deckarep/golang-set/v2"
 	"github.com/n6g7/bingo/internal/config"
 	"github.com/n6g7/bingo/internal/nameserver"
 	"github.com/n6g7/bingo/internal/proxy"
@@ -30,15 +31,15 @@ var (
 
 type Reconciler struct {
 	logger             *log.Logger
-	nameserverDomains  *DomainSet
-	proxyDomains       *DomainSet
+	nameserverDomains  mapset.Set[string]
+	proxyDomains       mapset.Set[string]
 	needsDiff          bool
 	proxyBackend       proxy.Proxy
 	nsBackend          nameserver.Nameserver
 	lastReconciliation time.Time
 	minimumWait        time.Duration
 	loopTimeout        time.Duration
-	deletionQueue      *DomainSet
+	deletionQueue      mapset.Set[string]
 	conf               *config.Config
 }
 
@@ -49,22 +50,22 @@ func NewReconciler(
 	conf *config.Config,
 ) *Reconciler {
 	return &Reconciler{
-		logger.With("component", "reconciler"),
-		nil,
-		nil,
-		false,
-		prox,
-		ns,
-		time.Unix(0, 0),
-		conf.ReconciliationTimeout,
-		conf.ReconcilerLoopTimeout,
-		NewDomainSet(),
-		conf,
+		logger:             logger.With("component", "reconciler"),
+		nameserverDomains:  nil,
+		proxyDomains:       nil,
+		needsDiff:          false,
+		proxyBackend:       prox,
+		nsBackend:          ns,
+		lastReconciliation: time.Unix(0, 0),
+		minimumWait:        conf.ReconciliationTimeout,
+		loopTimeout:        conf.ReconcilerLoopTimeout,
+		deletionQueue:      mapset.NewSet[string](),
+		conf:               conf,
 	}
 }
 
-func (r *Reconciler) SetNameserverDomains(nsDomains *DomainSet) {
-	r.logger.Trace("received NS domains", "domains", nsDomains.AsSlice())
+func (r *Reconciler) SetNameserverDomains(nsDomains mapset.Set[string]) {
+	r.logger.Trace("received NS domains", "domains", nsDomains.ToSlice())
 	if reflect.DeepEqual(nsDomains, r.nameserverDomains) {
 		return
 	}
@@ -72,8 +73,8 @@ func (r *Reconciler) SetNameserverDomains(nsDomains *DomainSet) {
 	r.needsDiff = true
 }
 
-func (r *Reconciler) SetProxyDomains(proxyDomains *DomainSet) {
-	r.logger.Trace("received proxy domains", "domains", proxyDomains.AsSlice())
+func (r *Reconciler) SetProxyDomains(proxyDomains mapset.Set[string]) {
+	r.logger.Trace("received proxy domains", "domains", proxyDomains.ToSlice())
 	if reflect.DeepEqual(proxyDomains, r.proxyDomains) {
 		return
 	}
@@ -86,7 +87,7 @@ func (r *Reconciler) MarkForDeletion(domain string) {
 	r.needsDiff = true
 }
 
-func (r *Reconciler) Diff() (toCreate *DomainSet, toDelete *DomainSet) {
+func (r *Reconciler) Diff() (toCreate mapset.Set[string], toDelete mapset.Set[string]) {
 	if r.nameserverDomains == nil {
 		r.logger.Debug("reconciler not ready to diff, no nameserver domains yet")
 		return nil, nil
@@ -96,15 +97,15 @@ func (r *Reconciler) Diff() (toCreate *DomainSet, toDelete *DomainSet) {
 		return nil, nil
 	}
 
-	toDelete = r.nameserverDomains.Diff(r.proxyDomains).Union(r.deletionQueue)                       // NS - P + D
-	toCreate = r.proxyDomains.Diff(r.nameserverDomains).Union(r.deletionQueue.Inter(r.proxyDomains)) // P - NS + (D&P)
+	toDelete = r.nameserverDomains.Difference(r.proxyDomains).Union(r.deletionQueue)                           // NS - P + D
+	toCreate = r.proxyDomains.Difference(r.nameserverDomains).Union(r.deletionQueue.Intersect(r.proxyDomains)) // P - NS + (D&P)
 
-	managedGauge.Set(float64(r.proxyDomains.Length()))
+	managedGauge.Set(float64(r.proxyDomains.Cardinality()))
 
 	return
 }
 
-func (r *Reconciler) Reconcile(toCreate, toDelete *DomainSet) error {
+func (r *Reconciler) Reconcile(toCreate, toDelete mapset.Set[string]) error {
 	r.lastReconciliation = time.Now()
 
 	// Start by deleting, gives us a chance to immediately recreate domains in
@@ -151,7 +152,7 @@ func (r *Reconciler) Run() error {
 		if r.needsDiff {
 			toCreate, toDelete := r.Diff()
 
-			if (toCreate == nil || toCreate.Length() == 0) && (toDelete == nil || toDelete.Length() == 0) {
+			if (toCreate == nil || toCreate.Cardinality() == 0) && (toDelete == nil || toDelete.Cardinality() == 0) {
 				if !previouslyInSync {
 					r.logger.Info("proxy and nameserver are in sync")
 					previouslyInSync = true
@@ -171,7 +172,7 @@ func (r *Reconciler) Run() error {
 					if err != nil {
 						r.logger.Error("error during reconciliation, will attempt again", "err", err)
 					} else {
-						r.deletionQueue = NewDomainSet()
+						r.deletionQueue = mapset.NewSet[string]()
 						r.needsDiff = false
 					}
 					tooEarlyWarningSent = false

@@ -8,8 +8,8 @@ import (
 	"regexp"
 	"strings"
 
+	mapset "github.com/deckarep/golang-set/v2"
 	"github.com/n6g7/bingo/internal/config"
-	"github.com/n6g7/bingo/internal/set"
 	"golang.org/x/exp/slices"
 )
 
@@ -17,7 +17,7 @@ type TraefikProxy struct {
 	hosts       []string
 	adminPort   uint16
 	scheme      string
-	entryPoints *set.Set[string]
+	entryPoints mapset.Set[string]
 	regexp      *regexp.Regexp
 }
 
@@ -26,7 +26,7 @@ func NewTraefikProxy(conf config.TraefikConf) *TraefikProxy {
 		hosts:       conf.Hosts,
 		adminPort:   conf.AdminPort,
 		scheme:      conf.Scheme,
-		entryPoints: set.NewSet(conf.EntryPoints),
+		entryPoints: mapset.NewSet[string](conf.EntryPoints...),
 	}
 }
 
@@ -86,8 +86,8 @@ func (t *TraefikProxy) ListServices() ([]Service, error) {
 			continue
 		}
 		// Only track services on specified entrypoints
-		inter := set.NewSet(router.EntryPoints).Inter(t.entryPoints)
-		if inter.Length() == 0 {
+		inter := mapset.NewSet[string](router.EntryPoints...).Intersect(t.entryPoints)
+		if inter.Cardinality() == 0 {
 			continue
 		}
 
