@@ -5,7 +5,7 @@ COPY . .
 RUN CGO_ENABLED=0 go build \
   -mod=readonly \
   -trimpath \
-  -ldflags "-s -w -X github.com/n6g7/bingo/cmd/bingo.version=$version" \
+  -ldflags "-s -w -X github.com/n6g7/nomtail/pkg/version.version=$version" \
   ./cmd/bingo
 
 FROM alpine:3.17
