@@ -63,7 +63,6 @@ func main() {
 		logger.Error("Bingo stopped with an error", "err", err)
 		os.Exit(1)
 	}
-	return
 }
 
 func bingo(logger *log.Logger, ns nameserver.Nameserver, prox proxy.Proxy, conf *config.Config) error {
@@ -71,12 +70,12 @@ func bingo(logger *log.Logger, ns nameserver.Nameserver, prox proxy.Proxy, conf 
 
 	err := ns.Init()
 	if err != nil {
-		return fmt.Errorf("Nameserver backend initialization failed: %w", err)
+		return fmt.Errorf("nameserver backend initialization failed: %w", err)
 	}
 	logger.Info("initialized nameserver backend", "type", conf.Nameserver.Type)
 	err = prox.Init()
 	if err != nil {
-		return fmt.Errorf("Proxy backend initialization failed: %w", err)
+		return fmt.Errorf("proxy backend initialization failed: %w", err)
 	}
 	logger.Info("initialized proxy backend", "type", conf.Proxy.Type)
 
