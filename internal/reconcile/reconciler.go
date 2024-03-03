@@ -178,7 +178,7 @@ func (r *Reconciler) Run() error {
 					tooEarlyWarningSent = false
 				} else if !tooEarlyWarningSent {
 					r.logger.Debug(
-						"net enough tme has passed since the last reconciliation",
+						"not enough time has passed since the last reconciliation",
 						"minimum_wait", r.minimumWait,
 						"next_attempt_in", earliestReco.Sub(now).Round(time.Second),
 					)
