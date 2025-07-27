@@ -1,14 +1,11 @@
 module github.com/n6g7/bingo
 
-go 1.22
-
-toolchain go1.22.0
+go 1.24
 
 require (
 	github.com/aws/aws-sdk-go-v2/config v1.18.8
 	github.com/aws/aws-sdk-go-v2/service/route53 v1.26.0
 	github.com/deckarep/golang-set/v2 v2.6.0
-	github.com/lizongying/go-xpath v0.0.0-20221013102623-3e55fa3ceeed
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/n6g7/nomtail v0.2.0
 	github.com/prometheus/client_golang v1.17.0
@@ -17,8 +14,6 @@ require (
 )
 
 require (
-	github.com/antchfx/htmlquery v1.2.5 // indirect
-	github.com/antchfx/xpath v1.2.1 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.17.3 // indirect
 	github.com/aws/aws-sdk-go-v2/credentials v1.13.8 // indirect
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.12.21 // indirect
@@ -33,7 +28,6 @@ require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
-	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/magiconair/properties v1.8.6 // indirect
@@ -48,7 +42,6 @@ require (
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/subosito/gotenv v1.4.1 // indirect
-	golang.org/x/net v0.17.0 // indirect
 	golang.org/x/sys v0.13.0 // indirect
 	golang.org/x/text v0.13.0 // indirect
 	google.golang.org/protobuf v1.31.0 // indirect
