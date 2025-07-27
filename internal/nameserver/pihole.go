@@ -1,16 +1,12 @@
 package nameserver
 
 import (
-	"bytes"
 	"crypto/tls"
-	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"net/http/cookiejar"
-	"net/url"
+	"strings"
 
-	"github.com/lizongying/go-xpath/xpath"
 	"github.com/n6g7/bingo/internal/config"
 	"github.com/n6g7/nomtail/pkg/log"
 )
@@ -19,23 +15,7 @@ type PiholeNS struct {
 	logger   *log.Logger
 	baseURL  string
 	password string
-	client   *http.Client
-}
-
-func initClient() (*http.Client, error) {
-	transport := &http.Transport{
-		// Ignore invalid certs
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-	}
-	jar, err := cookiejar.New(nil)
-	if err != nil {
-		return nil, fmt.Errorf("cookie jar creation failed: %w", err)
-	}
-	client := &http.Client{
-		Transport: transport,
-		Jar:       jar,
-	}
-	return client, nil
+	client   *JsonClient
 }
 
 func NewPiholeNS(logger *log.Logger, conf config.PiholeConf) *PiholeNS {
@@ -46,123 +26,106 @@ func NewPiholeNS(logger *log.Logger, conf config.PiholeConf) *PiholeNS {
 	}
 }
 
+// Send an HTTP request to the Pi-hole, with built-in CSRF token refresh.
+func (ph *PiholeNS) do(method, uri string, reqBody, respBody any) error {
+	req, err := http.NewRequest(method, ph.baseURL+uri, nil)
+	if err != nil {
+		return fmt.Errorf("failed to build request: %w", err)
+	}
+	err = ph.client.DoJSON(req, reqBody, respBody)
+	if err != nil {
+		// If we get a 401, it probably means the CSRF token has expired. Login again to refresh it.
+		if strings.Contains(err.Error(), "status 401 Unauthorized") {
+			if err := ph.login(); err != nil {
+				return fmt.Errorf("failed to login while refreshing CSRF token: %w", err)
+			}
+			// Try again.
+			return ph.do(method, uri, reqBody, respBody)
+		}
+		return err
+	}
+	return nil
+}
+
+type loginRequest struct {
+	Password string  `json:"password"`
+	Totp     *string `json:"totp"`
+}
+type loginResponse struct {
+	Session struct {
+		Valid bool   `json:"valid"`
+		Csrf  string `json:"csrf"`
+	} `json:"session"`
+}
+
 func (ph *PiholeNS) login() error {
-	resp, err := ph.client.PostForm(
-		ph.baseURL+"/admin/login.php",
-		url.Values{"pw": {ph.password}},
+	var response loginResponse
+	err := ph.do(
+		"POST",
+		"/api/auth",
+		&loginRequest{Password: ph.password},
+		&response,
 	)
 	if err != nil {
 		return fmt.Errorf("pi-hole login failed: %w", err)
 	}
-	if resp.StatusCode != 200 {
-		return fmt.Errorf("pi-hole login failed")
+
+	if !response.Session.Valid {
+		return fmt.Errorf("pi-hole login failed due to invalid session (?)")
 	}
+
+	ph.client.CsrfToken = response.Session.Csrf
+
 	ph.logger.Debug("pi-hole login successful")
 	return nil
 }
 
 func (ph *PiholeNS) Init() error {
-	client, err := initClient()
-	if err != nil {
-		return fmt.Errorf("pi-hole client creation failed: %w", err)
+	// Create HTTP client
+	transport := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, // Ignore invalid certs
 	}
-	ph.client = client
+	jar, err := cookiejar.New(nil)
+	if err != nil {
+		return fmt.Errorf("cookie jar creation failed: %w", err)
+	}
+	ph.client = &JsonClient{Client: http.Client{
+		Transport: transport,
+		Jar:       jar,
+	}}
+
+	// Initial login
 	return ph.login()
 }
 
-func (ph *PiholeNS) getCSRFToken() (string, error) {
-	resp, err := ph.client.Get(ph.baseURL + "/admin/cname_records.php")
-	if err != nil {
-		return "", err
-	}
-	xp, err := xpath.NewXpathFromReader(resp.Body)
-	if err != nil {
-		return "", err
-	}
-	return xp.FindStrOne(`//*[@id="token"]`), nil
-}
-
-func (ph *PiholeNS) request(uri string, qs url.Values, output any) error {
-	token, err := ph.getCSRFToken()
-	if err != nil {
-		return fmt.Errorf("error fetching CSRF token: %w", err)
-	}
-	qs.Add("token", token)
-
-	resp, err := ph.client.PostForm(ph.baseURL+uri, qs)
-	if err != nil {
-		return fmt.Errorf("pi-hole request to '%s' failed: %w", uri, err)
-	}
-
-	if resp.StatusCode != 200 {
-		return fmt.Errorf("unexpected status code while querying %s: %d", uri, resp.StatusCode)
-	}
-
-	// Attempt parsing body
-	rawBody := &bytes.Buffer{}
-	body := io.TeeReader(resp.Body, rawBody)
-	decoder := json.NewDecoder(body)
-	err = decoder.Decode(output)
-	if err != nil {
-		// Error parsing response body, are we logged out?
-		if rawBody.String() == "Session expired! Please re-login on the Pi-hole dashboard." {
-			// Login + re-attemp request
-			ph.login()
-			return ph.request(uri, qs, output)
-		}
-
-		return fmt.Errorf("error parsing '%s' response: %w", uri, err)
-	}
-	return nil
-}
-
 type ListResult struct {
-	Data [][]string `json:"data"`
+	Config struct {
+		DNS struct {
+			CNAMERecords struct {
+				Value []string `json:"value"`
+			} `json:"cnameRecords"`
+		} `json:"dns"`
+	} `json:"config"`
 }
 
 func (ph *PiholeNS) ListRecords() ([]Record, error) {
 	output := &ListResult{}
-	err := ph.request(
-		"/admin/scripts/pi-hole/php/customcname.php",
-		url.Values{"action": {"get"}},
-		output,
-	)
+	err := ph.do("GET", "/api/config/dns/cnameRecords?detailed=true", nil, output)
 	if err != nil {
 		return nil, err
 	}
 
 	records := []Record{}
-	for _, row := range output.Data {
-		records = append(records, Record{row[0], row[1]})
+	for _, row := range output.Config.DNS.CNAMERecords.Value {
+		items := strings.Split(row, ",")
+		records = append(records, Record{items[0], items[1]})
 	}
 	return records, nil
 }
 
-type GenericResult struct {
-	Success bool   `json:"success"`
-	Message string `json:"message"`
-}
-
 func (ph *PiholeNS) AddRecord(name, cname string) error {
-	output := &GenericResult{}
-	err := ph.request(
-		"/admin/scripts/pi-hole/php/customcname.php",
-		url.Values{
-			"action": {"add"},
-			"domain": {name},
-			"target": {cname},
-		},
-		output,
-	)
-	if err != nil {
-		return err
-	}
-
-	if !output.Success {
-		return fmt.Errorf("error while creating record for '%s': %s", name, output.Message)
-	}
-
-	return nil
+	url := fmt.Sprintf("/api/config/dns/cnameRecords/%s%%2C%s", name, cname)
+	return ph.do("PUT", url, nil, nil)
 }
 
 func (ph *PiholeNS) RemoveRecord(name string) error {
@@ -182,23 +145,6 @@ func (ph *PiholeNS) RemoveRecord(name string) error {
 		return fmt.Errorf("couldn't find target for domain %s", name)
 	}
 
-	output := &GenericResult{}
-	err = ph.request(
-		"/admin/scripts/pi-hole/php/customcname.php",
-		url.Values{
-			"action": {"delete"},
-			"domain": {name},
-			"target": {target},
-		},
-		output,
-	)
-	if err != nil {
-		return err
-	}
-
-	if !output.Success {
-		return fmt.Errorf("error while deleting record for '%s': %s", name, output.Message)
-	}
-
-	return nil
+	url := fmt.Sprintf("/api/config/dns/cnameRecords/%s%%2C%s", name, target)
+	return ph.do("DELETE", url, nil, nil)
 }
