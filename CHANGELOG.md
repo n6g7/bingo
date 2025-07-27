@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.0](https://github.com/n6g7/bingo/compare/v0.0.16...v0.1.0) (2025-07-27)
+
+
+### Features
+
+* support pi-hole v6 ([58cf105](https://github.com/n6g7/bingo/commit/58cf10593d88ff469ed07a0d1c149e7a530d601e))
+
 ## [0.0.16](https://github.com/n6g7/bingo/compare/v0.0.15...v0.0.16) (2024-03-03)
 
 
